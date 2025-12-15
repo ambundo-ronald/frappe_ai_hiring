@@ -208,7 +208,7 @@ class LLMClient:
 			response = self.call_llm(
 				prompt="Respond with: {\"status\": \"ok\", \"message\": \"Connection successful\"}",
 				system_prompt="You are a test assistant. Respond only with valid JSON.",
-				operation="connection_test",
+				operation="Other",
 			)
 			return response
 		except Exception as e:
