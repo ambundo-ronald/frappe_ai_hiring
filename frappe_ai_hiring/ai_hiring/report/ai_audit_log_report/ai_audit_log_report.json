@@ -6,5 +6,6 @@
  "module": "AI Hiring",
  "title": "AI Audit Log Report",
  "report_name": "AI Audit Log Report",
+ "ref_doctype": "AI Audit Log",
  "disabled": 0
 }
