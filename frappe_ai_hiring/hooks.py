@@ -36,6 +36,7 @@ app_license = "MIT"
 doctype_js = {
 	"Job Applicant": "frappe_ai_hiring/ai_hiring/doctype/job_applicant/job_applicant.js",
 	"AI Interview Brief": "frappe_ai_hiring/ai_hiring/doctype/ai_interview_brief/ai_interview_brief.js",
+	"AI Settings": "frappe_ai_hiring/ai_hiring/doctype/ai_settings/ai_settings.js",
 }
 
 # Home Pages
