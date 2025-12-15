@@ -71,6 +71,19 @@ class AICandidateProfile(Document):
 		if "education_relevance" in data:
 			self.education_relevance = data["education_relevance"]
 
+		# Extract and add projects
+		if "projects" in data and data["projects"]:
+			self.projects = []
+			for project in data["projects"]:
+				self.append(
+					"projects",
+					{
+						"title": project.get("title", ""),
+						"candidate_contribution": project.get("candidate_contribution", ""),
+						"skills": ", ".join(project.get("skills", [])) if isinstance(project.get("skills"), list) else project.get("skills", ""),
+					},
+				)
+
 
 @frappe.whitelist()
 def get_candidate_profile(applicant: str) -> Dict[str, Any]:

@@ -24,6 +24,7 @@ class AIAuditLogger:
 		metadata: Optional[Dict[str, Any]] = None,
 		success: bool = True,
 		error_message: Optional[str] = None,
+		execution_time_ms: int = 0,
 	):
 		"""
 		Log an LLM API call with all relevant details
@@ -36,6 +37,7 @@ class AIAuditLogger:
 			metadata: Additional metadata (applicant_id, job_opening, etc.)
 			success: Whether the call was successful
 			error_message: Error message if failed
+			execution_time_ms: Time taken for execution in milliseconds
 		"""
 		try:
 			log_entry = {
@@ -49,6 +51,38 @@ class AIAuditLogger:
 
 			if error_message:
 				log_entry["error_message"] = error_message
+
+			# Create AI Audit Log document
+			audit_log = frappe.new_doc("AI Audit Log")
+			audit_log.operation_type = operation
+			audit_log.model_used = model
+			audit_log.success = success
+			audit_log.timestamp = datetime.now()
+			audit_log.user = frappe.session.user
+			audit_log.execution_time_ms = execution_time_ms
+			
+			# Add applicant and job opening if in metadata
+			if metadata:
+				if metadata.get("doctype") == "Job Applicant":
+					audit_log.applicant = metadata.get("docname")
+				if metadata.get("job_opening"):
+					audit_log.job_opening = metadata.get("job_opening")
+				audit_log.operation_details = metadata.get("details", "")
+				audit_log.metadata = json.dumps(metadata, indent=2)
+			
+			# Add prompt/response previews (first 500 chars)
+			if prompt:
+				audit_log.prompt_preview = prompt[:500]
+			if response:
+				audit_log.response_preview = str(response)[:500]
+			
+			if error_message:
+				audit_log.error_message = error_message
+				audit_log.status = "Failed"
+			else:
+				audit_log.status = "Completed"
+			
+			audit_log.insert(ignore_permissions=True)
 
 			# Store in Error Log for visibility
 			frappe.log_error(
@@ -128,4 +162,36 @@ class AIAuditLogger:
 			metadata=metadata,
 			success=False,
 			error_message=error_message,
+		)
+	@staticmethod
+	def get_logs_for_applicant(applicant: str, limit: int = 50):
+		"""Get all audit logs for a specific applicant"""
+		return frappe.db.get_list(
+			"AI Audit Log",
+			filters={"applicant": applicant},
+			fields=["name", "timestamp", "operation_type", "success", "model_used"],
+			order_by="timestamp desc",
+			limit_page_length=limit,
+		)
+
+	@staticmethod
+	def get_logs_by_operation(operation: str, limit: int = 50):
+		"""Get all audit logs for a specific operation type"""
+		return frappe.db.get_list(
+			"AI Audit Log",
+			filters={"operation_type": operation},
+			fields=["name", "timestamp", "applicant", "success", "model_used"],
+			order_by="timestamp desc",
+			limit_page_length=limit,
+		)
+
+	@staticmethod
+	def get_failed_operations(limit: int = 50):
+		"""Get all failed AI operations"""
+		return frappe.db.get_list(
+			"AI Audit Log",
+			filters={"success": 0},
+			fields=["name", "timestamp", "operation_type", "applicant", "error_message"],
+			order_by="timestamp desc",
+			limit_page_length=limit,
 		)

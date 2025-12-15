@@ -20,6 +20,8 @@
   "total_experience_years",
   "education_relevance",
   "primary_skills",
+  "projects_section",
+  "projects",
   "ai_metadata_section",
   "ai_confidence_score",
   "pii_redacted",
@@ -115,6 +117,17 @@
    "fieldtype": "Small Text",
    "label": "Primary Skills",
    "description": "Comma-separated list of key skills"
+  },
+  {
+   "fieldname": "projects_section",
+   "fieldtype": "Section Break",
+   "label": "Projects"
+  },
+  {
+   "fieldname": "projects",
+   "fieldtype": "Table",
+   "label": "Projects",
+   "options": "AI Candidate Project"
   },
   {
    "fieldname": "ai_metadata_section",

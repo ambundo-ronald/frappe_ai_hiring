@@ -1,0 +1,10 @@
+{
+ "doctype": "Report",
+ "name": "AI Audit Log Report",
+ "is_standard": "No",
+ "report_type": "Query Report",
+ "module": "AI Hiring",
+ "title": "AI Audit Log Report",
+ "report_name": "AI Audit Log Report",
+ "disabled": 0
+}

@@ -101,6 +101,18 @@ def mock_llm_response():
 			"devops": ["Docker", "Kubernetes"],
 		},
 		"soft_skills": ["Leadership", "Communication", "Problem Solving"],
+		"projects": [
+			{
+				"title": "E-commerce Platform",
+				"candidate_contribution": "Led backend development and database optimization",
+				"skills": ["Python", "FastAPI", "PostgreSQL"],
+			},
+			{
+				"title": "Real-time Analytics Dashboard",
+				"candidate_contribution": "Designed and implemented data pipeline",
+				"skills": ["Python", "Redis", "PostgreSQL"],
+			},
+		],
 	}
 
 

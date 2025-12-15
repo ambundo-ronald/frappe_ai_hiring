@@ -52,6 +52,42 @@ class TestResumeParsing(FrappeTestCase):
 			assert result is not None
 			assert isinstance(result, str)  # Returns profile name
 
+	def test_create_candidate_profile_with_projects(self):
+		"""Test candidate profile creation captures projects"""
+		from frappe_ai_hiring.ai_hiring.services.resume_parser import (
+			create_candidate_profile,
+		)
+
+		profile = frappe.new_doc("AI Candidate Profile")
+		profile.applicant = self.job_applicant.name
+		profile.job_opening = self.job_opening.name
+		
+		# Simulate parsed data with projects
+		parsed_data = {
+			"skills": ["Python", "FastAPI"],
+			"experience_years": 5,
+			"projects": [
+				{
+					"title": "E-commerce Platform",
+					"candidate_contribution": "Led backend development",
+					"skills": ["Python", "FastAPI", "PostgreSQL"],
+				},
+				{
+					"title": "Analytics Dashboard",
+					"candidate_contribution": "Data pipeline design",
+					"skills": ["Python", "Redis"],
+				},
+			],
+		}
+		
+		profile.set_parsed_data(parsed_data, "gpt-4", 0.95)
+		
+		# Verify projects were added to the table
+		assert len(profile.projects) == 2
+		assert profile.projects[0].title == "E-commerce Platform"
+		assert profile.projects[1].title == "Analytics Dashboard"
+		assert "PostgreSQL" in profile.projects[0].skills
+
 	def test_create_candidate_profile_missing_job_opening(self):
 		"""Test candidate profile creation when job opening is missing"""
 		from frappe_ai_hiring.ai_hiring.services.resume_parser import (

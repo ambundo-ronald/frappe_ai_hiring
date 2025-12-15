@@ -64,6 +64,13 @@ OUTPUT SCHEMA (respond with valid JSON only):
       "responsibilities": ["resp1", "resp2"]
     }}
   ],
+  "projects": [
+    {{
+      "title": "string",
+      "candidate_contribution": "string",
+      "skills": ["skill1", "skill2"]
+    }}
+  ],
   "certifications": ["cert1", "cert2"],
   "education_relevance": "Highly Relevant|Relevant|Somewhat Relevant|Not Relevant",
   "summary": "Brief 2-3 sentence professional summary",
@@ -118,7 +125,7 @@ def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
 		)
 
 		# Step 4: Validate parsed data
-		required_fields = ["skills", "experience_years", "education", "experience"]
+		required_fields = ["skills", "experience_years", "education", "experience", "projects"]
 		for field in required_fields:
 			if field not in parsed_data:
 				frappe.throw(f"Missing required field in parsed data: {field}")
@@ -190,6 +197,7 @@ def validate_resume_schema(data: Dict[str, Any]) -> bool:
 		"experience_years",
 		"education",
 		"experience",
+		"projects",
 		"education_relevance",
 		"summary",
 	]

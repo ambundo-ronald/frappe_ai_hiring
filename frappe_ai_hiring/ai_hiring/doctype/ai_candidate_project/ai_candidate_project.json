@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2025-12-15 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Child",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "candidate_contribution",
+  "skills"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Project Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "candidate_contribution",
+   "fieldtype": "Text",
+   "label": "Candidate Contribution",
+   "description": "Description of candidate's role and contributions",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "skills",
+   "fieldtype": "Small Text",
+   "label": "Skills Used",
+   "description": "Comma-separated list of skills used in this project",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "modified": "2025-12-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AI Hiring",
+ "name": "AI Candidate Project",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "HR Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
