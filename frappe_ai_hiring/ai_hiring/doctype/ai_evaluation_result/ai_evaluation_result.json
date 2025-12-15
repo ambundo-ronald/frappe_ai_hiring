@@ -1,0 +1,284 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:AER-{applicant}-{####}",
+ "creation": "2025-12-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "applicant_details_section",
+  "applicant",
+  "applicant_name",
+  "job_opening",
+  "column_break_1",
+  "job_title",
+  "evaluation_date",
+  "questionnaire_section",
+  "question_set",
+  "total_questions",
+  "column_break_2",
+  "difficulty",
+  "passing_score_threshold",
+  "results_section",
+  "total_score",
+  "percentage_score",
+  "correct_answers",
+  "column_break_3",
+  "pass_fail",
+  "threshold_met",
+  "analysis_section",
+  "inconsistencies",
+  "weak_topics",
+  "column_break_4",
+  "strong_topics",
+  "recommendation",
+  "detailed_results_section",
+  "detailed_results",
+  "metadata_section",
+  "submission_time",
+  "column_break_5",
+  "processing_time",
+  "evaluated_by_model"
+ ],
+ "fields": [
+  {
+   "fieldname": "applicant_details_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant Details"
+  },
+  {
+   "fieldname": "applicant",
+   "fieldtype": "Link",
+   "label": "Job Applicant",
+   "options": "Job Applicant",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "label": "Applicant Name",
+   "fetch_from": "applicant.applicant_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "label": "Job Opening",
+   "options": "Job Opening",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job_title",
+   "fieldtype": "Data",
+   "label": "Job Title",
+   "fetch_from": "job_opening.job_title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "evaluation_date",
+   "fieldtype": "Datetime",
+   "label": "Evaluation Date",
+   "default": "Now",
+   "read_only": 1
+  },
+  {
+   "fieldname": "questionnaire_section",
+   "fieldtype": "Section Break",
+   "label": "Questionnaire"
+  },
+  {
+   "fieldname": "question_set",
+   "fieldtype": "Link",
+   "label": "Question Set",
+   "options": "AI Question Set",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_questions",
+   "fieldtype": "Int",
+   "label": "Total Questions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "difficulty",
+   "fieldtype": "Data",
+   "label": "Difficulty",
+   "fetch_from": "question_set.difficulty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "passing_score_threshold",
+   "fieldtype": "Float",
+   "label": "Passing Score Threshold (%)",
+   "fetch_from": "question_set.passing_score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "results_section",
+   "fieldtype": "Section Break",
+   "label": "Results"
+  },
+  {
+   "fieldname": "total_score",
+   "fieldtype": "Float",
+   "label": "Total Score",
+   "reqd": 1,
+   "precision": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "percentage_score",
+   "fieldtype": "Float",
+   "label": "Percentage Score",
+   "reqd": 1,
+   "precision": 2,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "correct_answers",
+   "fieldtype": "Int",
+   "label": "Correct Answers",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pass_fail",
+   "fieldtype": "Select",
+   "label": "Pass/Fail",
+   "options": "\nPass\nFail",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "threshold_met",
+   "fieldtype": "Check",
+   "label": "Threshold Met",
+   "default": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "analysis_section",
+   "fieldtype": "Section Break",
+   "label": "Analysis"
+  },
+  {
+   "fieldname": "inconsistencies",
+   "fieldtype": "Long Text",
+   "label": "Inconsistencies",
+   "description": "AI-detected inconsistencies in answers"
+  },
+  {
+   "fieldname": "weak_topics",
+   "fieldtype": "Small Text",
+   "label": "Weak Topics",
+   "description": "Topics where candidate performed poorly"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "strong_topics",
+   "fieldtype": "Small Text",
+   "label": "Strong Topics",
+   "description": "Topics where candidate performed well"
+  },
+  {
+   "fieldname": "recommendation",
+   "fieldtype": "Text",
+   "label": "Recommendation",
+   "description": "AI recommendation based on evaluation"
+  },
+  {
+   "fieldname": "detailed_results_section",
+   "fieldtype": "Section Break",
+   "label": "Detailed Results",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "detailed_results",
+   "fieldtype": "Code",
+   "label": "Detailed Results (JSON)",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "metadata_section",
+   "fieldtype": "Section Break",
+   "label": "Metadata",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "submission_time",
+   "fieldtype": "Float",
+   "label": "Submission Time (minutes)",
+   "precision": 2,
+   "description": "Time taken to complete questionnaire"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processing_time",
+   "fieldtype": "Float",
+   "label": "Processing Time (seconds)",
+   "precision": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "evaluated_by_model",
+   "fieldtype": "Data",
+   "label": "Evaluated By Model",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AI Hiring",
+ "name": "AI Evaluation Result",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR User"
+  }
+ ],
+ "search_fields": "applicant_name,job_title,pass_fail",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "applicant_name",
+ "track_changes": 1
+}

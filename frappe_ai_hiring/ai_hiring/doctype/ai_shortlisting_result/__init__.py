@@ -1,0 +1,1 @@
+"""AI Shortlisting Result DocType"""

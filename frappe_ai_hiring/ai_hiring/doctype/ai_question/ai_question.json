@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "topic",
+  "question_text",
+  "column_break_1",
+  "expected_answer",
+  "weight"
+ ],
+ "fields": [
+  {
+   "fieldname": "topic",
+   "fieldtype": "Select",
+   "label": "Topic",
+   "options": "OS\nDBMS\nOOP\nSDLC\nLanguage\nFrameworks\nTools\nSoft Skills\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "question_text",
+   "fieldtype": "Text",
+   "label": "Question",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_answer",
+   "fieldtype": "Select",
+   "label": "Expected Answer",
+   "options": "Yes\nNo",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Int",
+   "label": "Weight",
+   "default": 1,
+   "description": "Question importance weight",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AI Hiring",
+ "name": "AI Question",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

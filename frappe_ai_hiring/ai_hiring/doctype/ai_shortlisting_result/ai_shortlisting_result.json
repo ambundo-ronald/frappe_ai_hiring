@@ -1,0 +1,231 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:ASR-{applicant}-{####}",
+ "creation": "2025-12-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "applicant_details_section",
+  "applicant",
+  "applicant_name",
+  "job_opening",
+  "column_break_1",
+  "job_title",
+  "evaluation_date",
+  "shortlisting_result_section",
+  "decision",
+  "fit_score",
+  "column_break_2",
+  "confidence_score",
+  "threshold_met",
+  "reasons_section",
+  "reasons",
+  "missing_skills",
+  "strengths",
+  "ai_metadata_section",
+  "model_name",
+  "prompt_version",
+  "column_break_3",
+  "processing_time",
+  "token_usage",
+  "raw_response_section",
+  "raw_llm_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "applicant_details_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant Details"
+  },
+  {
+   "fieldname": "applicant",
+   "fieldtype": "Link",
+   "label": "Job Applicant",
+   "options": "Job Applicant",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "label": "Applicant Name",
+   "fetch_from": "applicant.applicant_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "label": "Job Opening",
+   "options": "Job Opening",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job_title",
+   "fieldtype": "Data",
+   "label": "Job Title",
+   "fetch_from": "job_opening.job_title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "evaluation_date",
+   "fieldtype": "Datetime",
+   "label": "Evaluation Date",
+   "default": "Now",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shortlisting_result_section",
+   "fieldtype": "Section Break",
+   "label": "Shortlisting Result"
+  },
+  {
+   "fieldname": "decision",
+   "fieldtype": "Select",
+   "label": "Decision",
+   "options": "\nShortlist\nReject\nReview",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fit_score",
+   "fieldtype": "Float",
+   "label": "Fit Score (%)",
+   "description": "AI-calculated fit score (0-100)",
+   "reqd": 1,
+   "precision": 2,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "confidence_score",
+   "fieldtype": "Float",
+   "label": "Confidence Score",
+   "description": "AI confidence in decision (0-1)",
+   "precision": 2
+  },
+  {
+   "fieldname": "threshold_met",
+   "fieldtype": "Check",
+   "label": "Threshold Met",
+   "default": 0,
+   "description": "Whether fit score meets shortlisting threshold"
+  },
+  {
+   "fieldname": "reasons_section",
+   "fieldtype": "Section Break",
+   "label": "Analysis"
+  },
+  {
+   "fieldname": "reasons",
+   "fieldtype": "Long Text",
+   "label": "Reasons",
+   "description": "AI-generated reasons for decision"
+  },
+  {
+   "fieldname": "missing_skills",
+   "fieldtype": "Small Text",
+   "label": "Missing Skills",
+   "description": "Skills required but not found in resume"
+  },
+  {
+   "fieldname": "strengths",
+   "fieldtype": "Small Text",
+   "label": "Strengths",
+   "description": "Candidate strengths identified by AI"
+  },
+  {
+   "fieldname": "ai_metadata_section",
+   "fieldtype": "Section Break",
+   "label": "AI Metadata",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "model_name",
+   "fieldtype": "Data",
+   "label": "Model Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "prompt_version",
+   "fieldtype": "Data",
+   "label": "Prompt Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processing_time",
+   "fieldtype": "Float",
+   "label": "Processing Time (seconds)",
+   "precision": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_usage",
+   "fieldtype": "Int",
+   "label": "Token Usage",
+   "description": "Approximate tokens used",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_response_section",
+   "fieldtype": "Section Break",
+   "label": "Raw LLM Response",
+   "collapsible": 1,
+   "collapsible_depends_on": "raw_llm_response"
+  },
+  {
+   "fieldname": "raw_llm_response",
+   "fieldtype": "Code",
+   "label": "Raw LLM Response",
+   "options": "JSON",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AI Hiring",
+ "name": "AI Shortlisting Result",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR User"
+  }
+ ],
+ "search_fields": "applicant_name,job_title,decision",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "applicant_name",
+ "track_changes": 1
+}

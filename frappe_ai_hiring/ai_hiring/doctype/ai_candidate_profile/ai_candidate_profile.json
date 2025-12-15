@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:ACP-{applicant}-{####}",
+ "creation": "2025-12-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "applicant_details_section",
+  "applicant",
+  "applicant_name",
+  "job_opening",
+  "column_break_1",
+  "job_title",
+  "application_date",
+  "parsed_data_section",
+  "parsed_resume_json",
+  "skill_vector",
+  "column_break_2",
+  "total_experience_years",
+  "education_relevance",
+  "primary_skills",
+  "ai_metadata_section",
+  "ai_confidence_score",
+  "pii_redacted",
+  "column_break_3",
+  "pii_token_map",
+  "parsing_date",
+  "parsing_model"
+ ],
+ "fields": [
+  {
+   "fieldname": "applicant_details_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant Details"
+  },
+  {
+   "fieldname": "applicant",
+   "fieldtype": "Link",
+   "label": "Job Applicant",
+   "options": "Job Applicant",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "label": "Applicant Name",
+   "fetch_from": "applicant.applicant_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "job_opening",
+   "fieldtype": "Link",
+   "label": "Job Opening",
+   "options": "Job Opening",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job_title",
+   "fieldtype": "Data",
+   "label": "Job Title",
+   "fetch_from": "job_opening.job_title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "application_date",
+   "fieldtype": "Date",
+   "label": "Application Date",
+   "fetch_from": "applicant.creation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parsed_data_section",
+   "fieldtype": "Section Break",
+   "label": "Parsed Resume Data"
+  },
+  {
+   "fieldname": "parsed_resume_json",
+   "fieldtype": "Long Text",
+   "label": "Parsed Resume (JSON)",
+   "description": "AI-extracted structured resume data"
+  },
+  {
+   "fieldname": "skill_vector",
+   "fieldtype": "Long Text",
+   "label": "Skill Vector (JSON)",
+   "description": "Normalized skill representation"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_experience_years",
+   "fieldtype": "Float",
+   "label": "Total Experience (Years)",
+   "precision": 1
+  },
+  {
+   "fieldname": "education_relevance",
+   "fieldtype": "Select",
+   "label": "Education Relevance",
+   "options": "\nHighly Relevant\nRelevant\nSomewhat Relevant\nNot Relevant",
+   "default": ""
+  },
+  {
+   "fieldname": "primary_skills",
+   "fieldtype": "Small Text",
+   "label": "Primary Skills",
+   "description": "Comma-separated list of key skills"
+  },
+  {
+   "fieldname": "ai_metadata_section",
+   "fieldtype": "Section Break",
+   "label": "AI Metadata"
+  },
+  {
+   "fieldname": "ai_confidence_score",
+   "fieldtype": "Float",
+   "label": "AI Confidence Score",
+   "description": "Confidence in parsing accuracy (0-1)",
+   "precision": 2
+  },
+  {
+   "fieldname": "pii_redacted",
+   "fieldtype": "Check",
+   "label": "PII Redacted",
+   "default": 0,
+   "description": "Whether PII was redacted before AI processing"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pii_token_map",
+   "fieldtype": "Long Text",
+   "label": "PII Token Map",
+   "description": "Encrypted mapping of PII tokens (for restoration)",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "parsing_date",
+   "fieldtype": "Datetime",
+   "label": "Parsing Date",
+   "default": "Now",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parsing_model",
+   "fieldtype": "Data",
+   "label": "Parsing Model",
+   "description": "LLM model used for parsing",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "AI Hiring",
+ "name": "AI Candidate Profile",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR User"
+  }
+ ],
+ "search_fields": "applicant_name,job_title,primary_skills",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

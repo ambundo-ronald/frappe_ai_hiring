@@ -1,0 +1,26 @@
+[
+ {
+  "create": 1,
+  "delete": 1,
+  "email": 1,
+  "export": 0,
+  "print": 0,
+  "read": 1,
+  "report": 1,
+  "role": "System Manager",
+  "share": 0,
+  "write": 1
+ },
+ {
+  "create": 0,
+  "delete": 0,
+  "email": 0,
+  "export": 0,
+  "print": 0,
+  "read": 1,
+  "report": 0,
+  "role": "HR Manager",
+  "share": 0,
+  "write": 1
+ }
+]

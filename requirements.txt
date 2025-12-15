@@ -1,0 +1,1 @@
+# frappe -- automatically installed via pyproject.toml

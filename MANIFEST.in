@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include frappe_ai_hiring *.css
+recursive-include frappe_ai_hiring *.csv
+recursive-include frappe_ai_hiring *.html
+recursive-include frappe_ai_hiring *.ico
+recursive-include frappe_ai_hiring *.js
+recursive-include frappe_ai_hiring *.json
+recursive-include frappe_ai_hiring *.md
+recursive-include frappe_ai_hiring *.png
+recursive-include frappe_ai_hiring *.py
+recursive-include frappe_ai_hiring *.svg
+recursive-include frappe_ai_hiring *.txt
+recursive-exclude frappe_ai_hiring *.pyc
