@@ -61,12 +61,12 @@ class AIAuditLogger:
 			audit_log.user = frappe.session.user
 			audit_log.execution_time_ms = execution_time_ms
 			
-			# Add applicant and job opening if in metadata
+			# Add reference doctype and name if in metadata
 			if metadata:
-				if metadata.get("doctype") == "Job Applicant":
-					audit_log.applicant = metadata.get("docname")
-				if metadata.get("job_opening"):
-					audit_log.job_opening = metadata.get("job_opening")
+				if metadata.get("doctype"):
+					audit_log.reference_doctype = metadata.get("doctype")
+				if metadata.get("docname"):
+					audit_log.reference_name = metadata.get("docname")
 				audit_log.operation_details = metadata.get("details", "")
 				audit_log.metadata = json.dumps(metadata, indent=2)
 			
@@ -164,11 +164,11 @@ class AIAuditLogger:
 			error_message=error_message,
 		)
 	@staticmethod
-	def get_logs_for_applicant(applicant: str, limit: int = 50):
-		"""Get all audit logs for a specific applicant"""
+	def get_logs_for_reference(reference_doctype: str, reference_name: str, limit: int = 50):
+		"""Get all audit logs for a specific document"""
 		return frappe.db.get_list(
 			"AI Audit Log",
-			filters={"applicant": applicant},
+			filters={"reference_doctype": reference_doctype, "reference_name": reference_name},
 			fields=["name", "timestamp", "operation_type", "success", "model_used"],
 			order_by="timestamp desc",
 			limit_page_length=limit,
@@ -180,7 +180,7 @@ class AIAuditLogger:
 		return frappe.db.get_list(
 			"AI Audit Log",
 			filters={"operation_type": operation},
-			fields=["name", "timestamp", "applicant", "success", "model_used"],
+			fields=["name", "timestamp", "reference_doctype", "reference_name", "success", "model_used"],
 			order_by="timestamp desc",
 			limit_page_length=limit,
 		)
@@ -191,7 +191,7 @@ class AIAuditLogger:
 		return frappe.db.get_list(
 			"AI Audit Log",
 			filters={"success": 0},
-			fields=["name", "timestamp", "operation_type", "applicant", "error_message"],
+			fields=["name", "timestamp", "operation_type", "reference_doctype", "reference_name", "error_message"],
 			order_by="timestamp desc",
 			limit_page_length=limit,
 		)

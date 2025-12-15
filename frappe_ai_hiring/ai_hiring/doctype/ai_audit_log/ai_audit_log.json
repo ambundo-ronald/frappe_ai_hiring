@@ -7,8 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "operation_type",
-  "applicant",
-  "job_opening",
+  "reference_doctype",
+  "reference_name",
   "column_break_1",
   "timestamp",
   "user",
@@ -36,17 +36,18 @@
    "index": 1
   },
   {
-   "fieldname": "applicant",
-   "fieldtype": "Link",
-   "label": "Applicant",
-   "options": "Job Applicant",
+   "fieldname": "reference_doctype",
+   "fieldtype": "Data",
+   "label": "Reference DocType",
+   "description": "DocType this operation relates to (e.g., Job Applicant)",
    "index": 1
   },
   {
-   "fieldname": "job_opening",
-   "fieldtype": "Link",
-   "label": "Job Opening",
-   "options": "Job Opening"
+   "fieldname": "reference_name",
+   "fieldtype": "Data",
+   "label": "Reference Name",
+   "description": "Document name this operation relates to",
+   "index": 1
   },
   {
    "fieldname": "column_break_1",
@@ -136,16 +137,7 @@
    "label": "Execution Time (ms)"
   }
  ],
- "links": [
-  {
-   "link_doctype": "Job Applicant",
-   "link_fieldname": "applicant"
-  },
-  {
-   "link_doctype": "Job Opening",
-   "link_fieldname": "job_opening"
-  }
- ],
+ "links": [],
  "modified": "2025-12-15 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "AI Hiring",
