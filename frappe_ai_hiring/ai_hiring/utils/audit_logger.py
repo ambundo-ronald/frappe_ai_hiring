@@ -111,7 +111,7 @@ class AIAuditLogger:
 	):
 		"""Log a shortlisting decision"""
 		AIAuditLogger.log_llm_call(
-			operation="shortlisting",
+			operation="Shortlisting",
 			prompt="[Redacted for brevity]",
 			response=json.dumps(
 				{"decision": decision, "fit_score": fit_score, "reasons": reasons}
@@ -131,7 +131,7 @@ class AIAuditLogger:
 	):
 		"""Log question generation"""
 		AIAuditLogger.log_llm_call(
-			operation="question_generation",
+			operation="Question Generation",
 			prompt="[Redacted for brevity]",
 			response=f"Generated {questions_generated} questions",
 			model=model,
@@ -143,7 +143,7 @@ class AIAuditLogger:
 	def log_interview_brief(applicant: str, brief_sections: dict, model: str):
 		"""Log interview brief generation"""
 		AIAuditLogger.log_llm_call(
-			operation="interview_brief_generation",
+			operation="Interview Brief",
 			prompt="[Redacted for brevity]",
 			response=json.dumps(brief_sections),
 			model=model,

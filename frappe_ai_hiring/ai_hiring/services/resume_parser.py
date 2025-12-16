@@ -120,8 +120,8 @@ def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
 		parsed_data = client.call_llm(
 			prompt=user_prompt,
 			system_prompt=system_prompt,
-			operation="resume_parsing",
-			metadata={"applicant": applicant_name, "job_opening": job_opening},
+			operation="Resume Parsing",
+			metadata={"doctype": "Job Applicant", "docname": applicant_name, "job_opening": job_opening},
 		)
 
 		# Step 4: Validate parsed data
@@ -165,9 +165,9 @@ def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
 		error_msg = f"Resume parsing failed for {applicant_name}: {str(e)}"
 		frappe.logger("ai_hiring").error(error_msg)
 		AIAuditLogger.log_error(
-			operation="resume_parsing",
+			operation="Resume Parsing",
 			error_message=error_msg,
-			metadata={"applicant": applicant_name, "job_opening": job_opening},
+			metadata={"doctype": "Job Applicant", "docname": applicant_name, "job_opening": job_opening},
 		)
 		raise
 

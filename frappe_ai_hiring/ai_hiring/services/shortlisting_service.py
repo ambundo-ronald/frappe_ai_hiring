@@ -116,8 +116,8 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 		shortlisting_data = client.call_llm(
 			prompt=user_prompt,
 			system_prompt=system_prompt,
-			operation="shortlisting",
-			metadata={"applicant": applicant_name, "job_opening": job_opening},
+			operation="Shortlisting",
+			metadata={"doctype": "Job Applicant", "docname": applicant_name, "job_opening": job_opening},
 		)
 
 		# Step 4: Validate shortlisting data
@@ -173,9 +173,9 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 		error_msg = f"Shortlisting failed for {applicant_name}: {str(e)}"
 		frappe.logger("ai_hiring").error(error_msg)
 		AIAuditLogger.log_error(
-			operation="shortlisting",
+			operation="Shortlisting",
 			error_message=error_msg,
-			metadata={"applicant": applicant_name, "job_opening": job_opening},
+			metadata={"doctype": "Job Applicant", "docname": applicant_name, "job_opening": job_opening},
 		)
 		raise
 
