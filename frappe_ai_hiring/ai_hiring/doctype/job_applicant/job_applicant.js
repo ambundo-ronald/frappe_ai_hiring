@@ -5,6 +5,24 @@ frappe.ui.form.on("Job Applicant", {
 	refresh(frm) {
 		// Hide standard apply/rejected actions
 		if (frm.doc.status === "Pending") {
+			// Add Process Candidate button (manual trigger)
+			if (frm.doc.resume_attachment) {
+				frm.add_custom_button(__("Process Candidate"), function() {
+					frappe.call({
+						method: "frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.enqueue_applicant_processing",
+						args: {
+							doc: frm.doc,
+						},
+						callback: function(r) {
+							frappe.msgprint(
+								__("Candidate processing queued"),
+								__("Success")
+							);
+						},
+					});
+				}).addClass("btn-success");
+			}
+
 			// Add custom AI actions
 			frm.add_custom_button(__("Reprocess Candidate"), function() {
 				frappe.call({

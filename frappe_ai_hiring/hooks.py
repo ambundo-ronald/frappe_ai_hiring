@@ -126,7 +126,6 @@ doctype_js = {
 doc_events = {
 	"Job Applicant": {
 		"after_insert": "frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.enqueue_applicant_processing",
-		"on_update": "frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.on_applicant_update",
 	}
 }
 
