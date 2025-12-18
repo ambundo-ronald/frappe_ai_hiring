@@ -19,71 +19,76 @@ def enqueue_applicant_processing(doc=None, method=None):
 		doc: Job Applicant document object or name (string)
 		method: Hook method name (only for doc events)
 	"""
-	# Handle both doc object and doc name (from UI calls)
-	if isinstance(doc, str):
-		doc = frappe.get_doc("Job Applicant", doc)
-	elif doc is None:
-		# Called from UI with doc in session
-		applicant_name = frappe.form_dict.get("doc")
-		if not applicant_name:
-			frappe.throw("Job Applicant name is required")
-		doc = frappe.get_doc("Job Applicant", applicant_name)
-	
-	# Check if AI processing is enabled
-	settings = frappe.get_cached_value(
-		"AI Settings", "AI Settings", ["enable_ai_processing", "enable_auto_shortlisting"], as_dict=True
-	)
-
-	if not settings or not settings.get("enable_ai_processing"):
-		frappe.throw("AI processing is disabled in AI Settings")
-
-	# Check if resume is attached
-	if not doc.resume_attachment:
-		frappe.throw("Resume attachment is required to process candidate")
-
-	# Check if already processing or completed
-	existing_log = frappe.db.get_value(
-		"AI Audit Log",
-		{"reference_doctype": "Job Applicant", "reference_name": doc.name, "operation_type": "Resume Parsing"},
-		"name",
-		order_by="timestamp desc",
-	)
-	
-	if existing_log:
-		frappe.msgprint(
-			"Candidate has already been processed. Use 'Reprocess Candidate' to reprocess.",
-			indicator="orange",
-			alert=True,
+	try:
+		# Handle both doc object and doc name (from UI calls)
+		if isinstance(doc, str):
+			doc = frappe.get_doc("Job Applicant", doc)
+		elif doc is None:
+			# Called from UI with doc in session
+			applicant_name = frappe.form_dict.get("doc")
+			if not applicant_name:
+				frappe.throw("Job Applicant name is required")
+			doc = frappe.get_doc("Job Applicant", applicant_name)
+		
+		# Check if AI processing is enabled
+		settings = frappe.get_cached_value(
+			"AI Settings", "AI Settings", ["enable_ai_processing", "enable_auto_shortlisting"], as_dict=True
 		)
-		return
 
-	# Enqueue processing job
-	frappe.enqueue(
-		method="frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.process_applicant",
-		queue="long",
-		timeout=300,
-		applicant_name=doc.name,
-		job_opening=doc.job_title,
-	)
+		if not settings or not settings.get("enable_ai_processing"):
+			frappe.logger("ai_hiring").info("AI processing is disabled in AI Settings")
+			return
 
-	frappe.msgprint(
-		f"AI processing queued for applicant {doc.applicant_name}",
-		indicator="blue",
-		alert=True,
-	)
+		# Check if resume is attached
+		if not doc.resume_attachment:
+			frappe.logger("ai_hiring").info(f"Skipping AI processing for {doc.name} - no resume attached")
+			return
+
+		# Check if already processing or completed
+		existing_log = frappe.db.get_value(
+			"AI Audit Log",
+			{"reference_doctype": "Job Applicant", "reference_name": doc.name, "operation_type": "Resume Parsing"},
+			"name",
+			order_by="timestamp desc",
+		)
+		
+		if existing_log:
+			frappe.logger("ai_hiring").info(f"Job Applicant {doc.name} already processed. Skipping.")
+			return
+
+		# Enqueue processing job
+		frappe.enqueue(
+			method="frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.process_applicant",
+			queue="long",
+			timeout=300,
+			applicant_name=doc.name,
+			job_opening=doc.job_title,
+		)
+
+		frappe.logger("ai_hiring").info(f"Queued AI processing for applicant {doc.name}")
+
+	except Exception as e:
+		frappe.logger("ai_hiring").error(f"Error in enqueue_applicant_processing: {str(e)}")
+		# Don't throw - just log the error so webform submission doesn't fail
 
 
 def on_applicant_update(doc, method=None):
 	"""
 	Handle Job Applicant updates
 	Triggered on Job Applicant on_update
+	Only process if resume was added AFTER initial creation
 
 	Args:
 		doc: Job Applicant document
 		method: Hook method name
 	"""
-	# Check if resume was just added
+	# Skip if this is a new document (after_insert will handle it)
+	if doc.get("__islocal"):
+		return
+	
+	# Only trigger if resume was changed to have a value
 	if doc.has_value_changed("resume_attachment") and doc.resume_attachment:
+		frappe.logger("ai_hiring").info(f"Resume was updated for {doc.name}, triggering processing")
 		enqueue_applicant_processing(doc, method)
 
 
