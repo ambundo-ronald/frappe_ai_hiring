@@ -23,6 +23,7 @@
   "section_break_2",
   "enable_ai_processing",
   "enable_auto_shortlisting",
+  "applicant_processing_delay_seconds",
   "enable_questionnaire_generation",
   "column_break_3",
   "enable_interview_brief_generation",
@@ -123,6 +124,14 @@
    "fieldtype": "Check",
    "label": "Enable Auto Shortlisting",
    "default": 1,
+   "depends_on": "eval:doc.enable_ai_processing"
+  },
+  {
+   "fieldname": "applicant_processing_delay_seconds",
+   "fieldtype": "Int",
+   "label": "Applicant Processing Delay (seconds)",
+   "default": 5,
+   "description": "Delay before processing new applicant to ensure files are saved",
    "depends_on": "eval:doc.enable_ai_processing"
   },
   {

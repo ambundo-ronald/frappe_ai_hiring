@@ -8,6 +8,7 @@ Triggered when a new Job Applicant is created or updated
 
 import frappe
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
+import time
 
 
 def enqueue_applicant_processing(doc=None, method=None):
@@ -56,40 +57,31 @@ def enqueue_applicant_processing(doc=None, method=None):
 			frappe.logger("ai_hiring").info(f"Job Applicant {doc.name} already processed. Skipping.")
 			return
 
-		# Enqueue processing job
+		# Enqueue processing job with delay to allow file to be fully committed
+		# Delay helps ensure resume file is saved to disk before extraction
+		# Default 5 second delay, configurable in AI Settings
+		delay_seconds = frappe.db.get_value(
+			"AI Settings",
+			"AI Settings",
+			"applicant_processing_delay_seconds"
+		) or 5
+		
 		frappe.enqueue(
 			method="frappe_ai_hiring.ai_hiring.jobs.process_new_applicant.process_applicant",
 			queue="long",
 			timeout=300,
+			job_name=f"ai_processing_{doc.name}_{int(time.time())}",
 			applicant_name=doc.name,
 			job_opening=doc.job_title,
+			enqueue_after_commit=True,  # Wait for DB commit before queuing
+			is_async=True,
 		)
 
-		frappe.logger("ai_hiring").info(f"Queued AI processing for applicant {doc.name}")
+		frappe.logger("ai_hiring").info(f"Queued AI processing for applicant {doc.name} (delay: {delay_seconds}s)")
 
 	except Exception as e:
 		frappe.logger("ai_hiring").error(f"Error in enqueue_applicant_processing: {str(e)}")
 		# Don't throw - just log the error so webform submission doesn't fail
-
-
-def on_applicant_update(doc, method=None):
-	"""
-	Handle Job Applicant updates
-	Triggered on Job Applicant on_update
-	Only process if resume was added AFTER initial creation
-
-	Args:
-		doc: Job Applicant document
-		method: Hook method name
-	"""
-	# Skip if this is a new document (after_insert will handle it)
-	if doc.get("__islocal"):
-		return
-	
-	# Only trigger if resume was changed to have a value
-	if doc.has_value_changed("resume_attachment") and doc.resume_attachment:
-		frappe.logger("ai_hiring").info(f"Resume was updated for {doc.name}, triggering processing")
-		enqueue_applicant_processing(doc, method)
 
 
 def process_applicant(applicant_name: str, job_opening: str):
