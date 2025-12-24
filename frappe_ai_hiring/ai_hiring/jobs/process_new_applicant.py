@@ -151,9 +151,9 @@ def process_applicant(applicant_name: str, job_opening: str):
 		frappe.log_error(title=f"AI Processing Error: {applicant_name}", message=error_msg)
 
 		AIAuditLogger.log_error(
-			operation="applicant_processing",
+			operation="Other",
 			error_message=error_msg,
-			metadata={"applicant": applicant_name, "job_opening": job_opening},
+			metadata={"doctype": "Job Applicant", "docname": applicant_name, "job_opening": job_opening},
 		)
 
 		# Update applicant with error

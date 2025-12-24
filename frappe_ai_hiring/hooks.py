@@ -34,9 +34,9 @@ app_license = "MIT"
 
 # include js in doctype views
 doctype_js = {
-	"Job Applicant": "frappe_ai_hiring/ai_hiring/doctype/job_applicant/job_applicant.js",
-	"AI Interview Brief": "frappe_ai_hiring/ai_hiring/doctype/ai_interview_brief/ai_interview_brief.js",
-	"AI Settings": "frappe_ai_hiring/ai_hiring/doctype/ai_settings/ai_settings.js",
+	"Job Applicant": "ai_hiring/doctype/job_applicant/job_applicant.js",
+	"AI Interview Brief": "ai_hiring/doctype/ai_interview_brief/ai_interview_brief.js",
+	"AI Settings": "ai_hiring/doctype/ai_settings/ai_settings.js",
 }
 
 # Home Pages

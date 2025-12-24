@@ -7,7 +7,7 @@ import frappe
 from typing import Dict, List, Any, Optional
 import json
 from frappe_ai_hiring.ai_hiring.utils.llm_client import call_llm
-from frappe_ai_hiring.ai_hiring.utils.audit_logger import log_ai_operation
+from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 
 
 PROMPT_VERSION = "1.0.0"
@@ -231,17 +231,20 @@ def evaluate_questionnaire(
         candidate_context=candidate_context
     )
     
-    # Log the operation
-    log_ai_operation(
-        operation_type="questionnaire_evaluation",
-        input_data={
-            "job_applicant": job_applicant,
+    # Log the operation (pre-call)
+    AIAuditLogger.log_llm_call(
+        operation="Evaluation",
+        prompt=f"[Generated prompts v{PROMPT_VERSION}]",
+        response="",
+        model="",
+        metadata={
+            "doctype": "Job Applicant",
+            "docname": job_applicant,
             "question_set": question_set,
             "total_questions": len(questions_and_answers),
-            "prompt_version": PROMPT_VERSION
+            "prompt_version": PROMPT_VERSION,
         },
-        reference_doctype="Job Applicant",
-        reference_name=job_applicant
+        success=True,
     )
     
     try:
@@ -250,42 +253,33 @@ def evaluate_questionnaire(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             reference_doctype="AI Evaluation Result",
-            operation_type="questionnaire_evaluation"
+            operation_type="Evaluation"
         )
         
         # Validate schema
         validate_evaluation_schema(response)
         
         # Log success
-        log_ai_operation(
-            operation_type="questionnaire_evaluation",
-            input_data={
-                "job_applicant": job_applicant,
-                "question_set": question_set
-            },
-            output_data={
+        AIAuditLogger.log_llm_call(
+            operation="Evaluation",
+            prompt=user_prompt,
+            response=json.dumps({
                 "percentage_score": response["summary"]["percentage_score"],
-                "pass_fail": response["summary"]["pass_fail"]
-            },
-            reference_doctype="Job Applicant",
-            reference_name=job_applicant,
-            status="Success"
+                "pass_fail": response["summary"]["pass_fail"],
+            }),
+            model="",
+            metadata={"doctype": "Job Applicant", "docname": job_applicant, "question_set": question_set},
+            success=True,
         )
         
         return response
         
     except Exception as e:
         # Log failure
-        log_ai_operation(
-            operation_type="questionnaire_evaluation",
-            input_data={
-                "job_applicant": job_applicant,
-                "question_set": question_set
-            },
+        AIAuditLogger.log_error(
+            operation="Evaluation",
             error_message=str(e),
-            reference_doctype="Job Applicant",
-            reference_name=job_applicant,
-            status="Failed"
+            metadata={"doctype": "Job Applicant", "docname": job_applicant, "question_set": question_set},
         )
         raise
 

@@ -7,7 +7,7 @@ import frappe
 from typing import Dict, List, Any, Optional
 import json
 from frappe_ai_hiring.ai_hiring.utils.llm_client import call_llm
-from frappe_ai_hiring.ai_hiring.utils.audit_logger import log_ai_operation
+from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 
 
 PROMPT_VERSION = "1.0.0"
@@ -306,16 +306,19 @@ def generate_interview_brief(
         evaluation_data=evaluation_data
     )
     
-    # Log the operation
-    log_ai_operation(
-        operation_type="interview_brief_generation",
-        input_data={
-            "job_applicant": job_applicant,
+    # Log the operation (pre-call)
+    AIAuditLogger.log_llm_call(
+        operation="Interview Brief",
+        prompt=f"[Generated prompts v{PROMPT_VERSION}]",
+        response="",
+        model="",
+        metadata={
+            "doctype": "Job Applicant",
+            "docname": job_applicant,
             "include_questionnaire": include_questionnaire,
-            "prompt_version": PROMPT_VERSION
+            "prompt_version": PROMPT_VERSION,
         },
-        reference_doctype="Job Applicant",
-        reference_name=job_applicant
+        success=True,
     )
     
     try:
@@ -324,36 +327,33 @@ def generate_interview_brief(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             reference_doctype="AI Interview Brief",
-            operation_type="interview_brief_generation"
+            operation_type="Interview Brief"
         )
         
         # Validate schema
         validate_interview_brief_schema(response)
         
         # Log success
-        log_ai_operation(
-            operation_type="interview_brief_generation",
-            input_data={"job_applicant": job_applicant},
-            output_data={
+        AIAuditLogger.log_llm_call(
+            operation="Interview Brief",
+            prompt=user_prompt,
+            response=json.dumps({
                 "hire_recommendation": response["decision_support"]["hire_recommendation"],
-                "confidence_level": response["decision_support"]["confidence_level"]
-            },
-            reference_doctype="Job Applicant",
-            reference_name=job_applicant,
-            status="Success"
+                "confidence_level": response["decision_support"]["confidence_level"],
+            }),
+            model="",
+            metadata={"doctype": "Job Applicant", "docname": job_applicant},
+            success=True,
         )
         
         return response
         
     except Exception as e:
         # Log failure
-        log_ai_operation(
-            operation_type="interview_brief_generation",
-            input_data={"job_applicant": job_applicant},
+        AIAuditLogger.log_error(
+            operation="Interview Brief",
             error_message=str(e),
-            reference_doctype="Job Applicant",
-            reference_name=job_applicant,
-            status="Failed"
+            metadata={"doctype": "Job Applicant", "docname": job_applicant},
         )
         raise
 

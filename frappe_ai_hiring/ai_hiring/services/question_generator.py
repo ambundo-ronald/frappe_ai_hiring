@@ -7,7 +7,7 @@ import frappe
 from typing import Dict, List, Any, Optional
 import json
 from frappe_ai_hiring.ai_hiring.utils.llm_client import call_llm
-from frappe_ai_hiring.ai_hiring.utils.audit_logger import log_ai_operation
+from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 
 
 PROMPT_VERSION = "1.0.0"
@@ -203,18 +203,20 @@ def generate_questions(
         topics=topics
     )
     
-    # Log the operation
-    log_ai_operation(
-        operation_type="question_generation",
-        input_data={
+    # Log the operation (pre-call)
+    AIAuditLogger.log_llm_call(
+        operation="Question Generation",
+        prompt=f"[Generated prompts v{PROMPT_VERSION}]",
+        response="",
+        model="",
+        metadata={
             "job_role": job_role,
             "difficulty_level": difficulty_level,
             "num_questions": num_questions,
             "topics": topics or [],
-            "prompt_version": PROMPT_VERSION
+            "prompt_version": PROMPT_VERSION,
         },
-        reference_doctype="AI Question Set",
-        reference_name=None
+        success=True,
     )
     
     try:
@@ -223,36 +225,33 @@ def generate_questions(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             reference_doctype="AI Question Set",
-            operation_type="question_generation"
+			operation_type="Question Generation"
         )
         
         # Validate schema
         validate_questions_schema(response)
-        
         # Log success
-        log_ai_operation(
-            operation_type="question_generation",
-            input_data={"job_role": job_role},
-            output_data={
-                "questions_generated": len(response.get("questions", [])),
-                "topics_covered": response.get("metadata", {}).get("topics_covered", [])
+        AIAuditLogger.log_llm_call(
+            operation="Question Generation",
+            prompt="[Redacted]",
+            response=f"Generated {len(response.get('questions', []))} questions",
+            model="",
+            metadata={
+                "job_role": job_role,
+                "topics_covered": response.get("metadata", {}).get("topics_covered", []),
+                "count": len(response.get("questions", [])),
             },
-            reference_doctype="AI Question Set",
-            reference_name=None,
-            status="Success"
+            success=True,
         )
         
         return response
         
     except Exception as e:
         # Log failure
-        log_ai_operation(
-            operation_type="question_generation",
-            input_data={"job_role": job_role},
+        AIAuditLogger.log_error(
+            operation="Question Generation",
             error_message=str(e),
-            reference_doctype="AI Question Set",
-            reference_name=None,
-            status="Failed"
+            metadata={"job_role": job_role},
         )
         raise
 
