@@ -214,3 +214,29 @@ def send_rejection_email(job_applicant: str):
 
 	except Exception as e:
 		frappe.throw(f"Failed to send rejection email: {str(e)}")
+
+
+@frappe.whitelist()
+def process_candidate(job_applicant: str):
+	"""
+	Queue AI processing for a Job Applicant (manual trigger from UI).
+
+	Args:
+		job_applicant: Job Applicant name
+
+	Returns:
+		Dict with queued flag
+	"""
+	if not frappe.has_permission("Job Applicant", "write", job_applicant):
+		frappe.throw("Insufficient permissions")
+
+	from frappe_ai_hiring.ai_hiring.jobs.process_new_applicant import enqueue_applicant_processing
+
+	try:
+		enqueue_applicant_processing(job_applicant)
+		frappe.msgprint(
+			f"✅ Candidate processing queued for {job_applicant}", indicator="green", alert=True
+		)
+		return {"queued": True}
+	except Exception as e:
+		frappe.throw(f"Failed to queue processing: {str(e)}")
