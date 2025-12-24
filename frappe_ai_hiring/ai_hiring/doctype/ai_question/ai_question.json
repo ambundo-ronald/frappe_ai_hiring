@@ -16,9 +16,9 @@
  "fields": [
   {
    "fieldname": "topic",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "label": "Topic",
-   "options": "OS\nDBMS\nOOP\nSDLC\nLanguage\nFrameworks\nTools\nSoft Skills\nOther",
+   "description": "Any topic area (e.g., C# Fundamentals, Web Development, Database Design)",
    "reqd": 1,
    "in_list_view": 1
   },
