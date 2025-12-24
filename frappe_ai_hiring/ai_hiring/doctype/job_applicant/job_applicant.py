@@ -126,3 +126,91 @@ def get_processing_status(job_applicant: str):
 	from frappe_ai_hiring.ai_hiring.utils.job_manager import get_applicant_processing_status
 
 	return get_applicant_processing_status(job_applicant)
+
+
+@frappe.whitelist()
+def generate_questions(job_applicant: str, difficulty: str = "Medium", num_questions: int = 15):
+	"""
+	Manually generate screening questions for the applicant's job role.
+
+	Args:
+		job_applicant: Job Applicant name
+		difficulty: Difficulty level (Easy/Medium/Hard)
+		num_questions: Number of questions to generate
+
+	Returns:
+		Dict with created question_set name
+	"""
+	if not frappe.has_permission("Job Applicant", "write", job_applicant):
+		frappe.throw("Insufficient permissions")
+
+	try:
+		applicant = frappe.get_doc("Job Applicant", job_applicant)
+
+		if not applicant.job_title:
+			frappe.throw("Job title is required to generate questions")
+
+		# Fetch job opening description if available
+		job_description = ""
+		if applicant.job_title:
+			job_opening_name = frappe.db.get_value(
+				"Job Opening", {"job_title": applicant.job_title}, "name", order_by="creation desc"
+			)
+			if job_opening_name:
+				job_opening = frappe.get_doc("Job Opening", job_opening_name)
+				job_description = job_opening.description or ""
+
+		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
+
+		question_set_name = create_question_set(
+			job_role=applicant.job_title,
+			job_description=job_description,
+			difficulty_level=difficulty,
+			num_questions=num_questions,
+		)
+
+		# Inform via comment on applicant
+		applicant.add_comment("Comment", f"Question set generated: {question_set_name}")
+
+		frappe.msgprint(
+			f"✅ Question set generated: {question_set_name}", indicator="green", alert=True
+		)
+		return {"success": True, "question_set": question_set_name}
+
+	except Exception as e:
+		frappe.throw(f"Failed to generate questions: {str(e)}")
+
+
+@frappe.whitelist()
+def send_rejection_email(job_applicant: str):
+	"""
+	Send a rejection email to the candidate (manual action).
+
+	Args:
+		job_applicant: Job Applicant name
+
+	Returns:
+		Dict with success flag
+	"""
+	if not frappe.has_permission("Job Applicant", "write", job_applicant):
+		frappe.throw("Insufficient permissions")
+
+	try:
+		applicant = frappe.get_doc("Job Applicant", job_applicant)
+		from frappe_ai_hiring.ai_hiring.utils.notifications import NotificationManager
+
+		success = NotificationManager.send_candidate_notification(
+			job_applicant=job_applicant,
+			notification_type="rejection_notice",
+		)
+
+		if success:
+			frappe.msgprint(
+				f"✅ Rejection email sent to {applicant.email_id}", indicator="green", alert=True
+			)
+			return {"success": True}
+		else:
+			frappe.throw("Failed to send rejection email")
+
+	except Exception as e:
+		frappe.throw(f"Failed to send rejection email: {str(e)}")

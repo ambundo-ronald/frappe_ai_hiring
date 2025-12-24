@@ -41,6 +41,30 @@ frappe.ui.form.on("Job Applicant", {
 				});
 			}).addClass("btn-primary");
 
+			// Manual: Generate Questions (no automatic generation)
+			if (frm.doc.status !== "Rejected" && frm.doc.job_title) {
+				frm.add_custom_button(__("Generate Questions"), function() {
+					frappe.call({
+						method: "frappe_ai_hiring.ai_hiring.doctype.job_applicant.job_applicant.generate_questions",
+						args: {
+							job_applicant: frm.doc.name,
+							difficulty: "Medium",
+							num_questions: 15,
+						},
+						callback: function(r) {
+							if (r.message && r.message.question_set) {
+								frappe.msgprint(
+									__("Question set generated: ") + r.message.question_set,
+									__("Success")
+								);
+							} else {
+								frappe.msgprint(__("Question generation completed"));
+							}
+						},
+					});
+				}).addClass("btn-warning");
+			}
+
 			// Show only if shortlisted
 			let show_questionnaire = frappe.db.count("AI Shortlisting Result", {
 				filters: {
@@ -71,6 +95,19 @@ frappe.ui.form.on("Job Applicant", {
 					).addClass("btn-info");
 				}
 			});
+		}
+
+		// Manual: Send Rejected Mail
+		if (frm.doc.status === "Rejected") {
+			frm.add_custom_button(__("Send Rejected Mail"), function() {
+				frappe.call({
+					method: "frappe_ai_hiring.ai_hiring.doctype.job_applicant.job_applicant.send_rejection_email",
+					args: { job_applicant: frm.doc.name },
+					callback: function(r) {
+						frappe.msgprint(__("Rejection email sent"));
+					}
+				});
+			}).addClass("btn-danger");
 		}
 
 		// Show processing status

@@ -33,17 +33,14 @@ Job Applicant Created
 Resume Parsing (extract → AI parse)
     ↓
 Shortlisting (evaluate → score → decision)
-    ↓ (if shortlisted)
-Question Generation
-    ↓
-Questionnaire Sent
-    ↓
-Candidate Completes
-    ↓
-Evaluation
-    ↓
-Interview Brief Generated
-    ↓
+   ↓
+Manual Actions (triggered from Job Applicant):
+  - Generate Questions (no automatic generation)
+  - Send Questionnaire (manual)
+  - Send Rejected Mail (manual)
+  - Candidate Completes → Evaluation (manual)
+  - Generate Interview Brief (manual)
+   ↓
 Interview → Offer → Hire
 ```
 
