@@ -152,9 +152,10 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 
 		# Fetch job opening description if available
 		job_description = ""
+		role_title = ""
 		if applicant.job_title:
 			job_opening_name = frappe.db.get_value(
-				"Job Opening", {"job_title": applicant.job_title}, "name", order_by="creation desc"
+				"Job Opening", {"name": applicant.job_title}, "name", order_by="creation desc"
 			)
 			if job_opening_name:
 				job_opening = frappe.get_doc("Job Opening", job_opening_name)
@@ -165,12 +166,13 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 			# Try fetching a few recent openings and pick the first with non-empty description
 			openings = frappe.get_all(
 				"Job Opening",
-				filters={"job_title": applicant.job_title},
-				fields=["name", "description"],
-				order_by="creation desc",
-				limit=5,
+				filters={"name": applicant.job_title},
+				fields=["name", "description", "job_title"],
+				order_by="creation desc"
 			)
 			for op in openings:
+				if op.get("job_title") and op.get("job_title").strip():
+					role_title = op.get("job_title").strip()
 				if op.get("description") and op.get("description").strip():
 					job_description = op.get("description").strip()
 					break
@@ -180,7 +182,7 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
 
 		question_set_name = create_question_set(
-			job_role=applicant.job_title,
+			job_role=role_title or applicant.job_title,
 			job_description=job_description,
 			difficulty_level=difficulty,
 			num_questions=num_questions,
