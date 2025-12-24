@@ -25,7 +25,7 @@ def reprocess_candidate(job_applicant: str, stages: list = None):
 		frappe.throw("Insufficient permissions")
 
 	if not stages:
-		stages = ["parsing", "shortlisting", "interview_brief"]
+		stages = ["parsing", "shortlisting"]
 
 	from frappe_ai_hiring.ai_hiring.utils.job_manager import reprocess_applicant
 
