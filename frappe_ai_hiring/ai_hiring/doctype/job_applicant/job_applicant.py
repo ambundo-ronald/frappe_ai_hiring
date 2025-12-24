@@ -160,8 +160,22 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 				job_opening = frappe.get_doc("Job Opening", job_opening_name)
 				job_description = job_opening.description or ""
 
-		if not job_description:
-			frappe.throw("Job description is required")
+		# Enforce mandatory job description; derive it from Job Opening(s) using job_title
+		if not job_description or not job_description.strip():
+			# Try fetching a few recent openings and pick the first with non-empty description
+			openings = frappe.get_all(
+				"Job Opening",
+				filters={"job_title": applicant.job_title},
+				fields=["name", "description"],
+				order_by="creation desc",
+				limit=5,
+			)
+			for op in openings:
+				if op.get("description") and op.get("description").strip():
+					job_description = op.get("description").strip()
+					break
+			if not job_description or not job_description.strip():
+				frappe.throw("Job description is required (no Job Opening with description found for this job title)")
 
 		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
 
@@ -184,7 +198,12 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 		return {"success": True, "question_set": question_set_name}
 
 	except Exception as e:
-		frappe.logger("ai_hiring").error(f"[GENERATE QUESTIONS] Applicant: {job_applicant}, Job Title: {applicant.job_title}, Job Description: {job_description if job_description else 'Not provided'}")
+		_safe_applicant = locals().get("applicant")
+		_safe_job_title = getattr(_safe_applicant, "job_title", "<unknown>") if _safe_applicant else "<unknown>"
+		_safe_jd = locals().get("job_description", "Not provided")
+		frappe.logger("ai_hiring").error(
+			f"[GENERATE QUESTIONS] Applicant: {job_applicant}, Job Title: {_safe_job_title}, Job Description: {_safe_jd}"
+		)
 		frappe.throw(f"Failed to generate questions: {str(e)}")
 
 

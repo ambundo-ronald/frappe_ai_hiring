@@ -272,6 +272,7 @@ def generate_questions(
 	if not job_role or not job_role.strip():
 		raise ValueError("Job role is required")
 	
+	# Job description is mandatory for consistent, role-aligned questions
 	if not job_description or not job_description.strip():
 		raise ValueError("Job description is required")
 	
