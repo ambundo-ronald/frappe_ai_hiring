@@ -46,7 +46,7 @@
    "fieldname": "candidate_answer",
    "fieldtype": "Select",
    "label": "Candidate Answer",
-   "options": "Yes\nNo",
+   "options": "\nYes\nNo",
    "in_list_view": 1,
    "description": "Answer provided by the candidate"
   },
