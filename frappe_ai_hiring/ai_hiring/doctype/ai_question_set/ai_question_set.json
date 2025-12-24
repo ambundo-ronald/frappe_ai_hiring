@@ -10,6 +10,9 @@
   "job_role",
  "difficulty",
  "job_description",
+  "personalization_section",
+  "based_on_applicant",
+  "include_resume_based_questions",
   "column_break_1",
   "total_questions",
   "passing_score",
@@ -49,6 +52,27 @@
      "label": "Job Description",
      "description": "Cached job description used for generation"
     },
+  {
+   "fieldname": "personalization_section",
+   "fieldtype": "Section Break",
+   "label": "Personalization",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "based_on_applicant",
+   "fieldtype": "Link",
+   "label": "Based on Applicant",
+   "options": "Job Applicant",
+   "description": "If set, questions were personalized using this applicant's resume",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "include_resume_based_questions",
+   "fieldtype": "Check",
+   "label": "Include Resume-based Questions",
+   "default": 1,
+   "description": "Generate depth/gap/verification questions using candidate resume data when available"
+  },
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"

@@ -9,7 +9,9 @@
   "question_text",
   "column_break_1",
   "expected_answer",
-  "weight"
+    "weight",
+    "type",
+    "category"
  ],
  "fields": [
   {
@@ -46,6 +48,21 @@
    "default": 1,
    "description": "Question importance weight",
    "in_list_view": 1
+    },
+    {
+     "fieldname": "type",
+     "fieldtype": "Select",
+     "label": "Type",
+     "options": "generic\ndepth\ngap\nverification",
+     "in_list_view": 1,
+     "description": "Personalization type for the question"
+    },
+    {
+     "fieldname": "category",
+     "fieldtype": "Data",
+     "label": "Category",
+     "in_list_view": 1,
+     "description": "Question category context (e.g., Claimed Skills, Missing Skills)"
   }
  ],
  "index_web_pages_for_search": 1,

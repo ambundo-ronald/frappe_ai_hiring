@@ -129,7 +129,7 @@ def get_processing_status(job_applicant: str):
 
 
 @frappe.whitelist()
-def generate_questions(job_applicant: str, difficulty: str = "Medium", num_questions: int = 15):
+def generate_questions(job_applicant: str, difficulty: str = "Medium", num_questions: int = 15, personalized: int = 1):
 	"""
 	Manually generate screening questions for the applicant's job role.
 
@@ -160,6 +160,9 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 				job_opening = frappe.get_doc("Job Opening", job_opening_name)
 				job_description = job_opening.description or ""
 
+		if not job_description:
+			frappe.throw("Job description is required")
+
 		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
 
 		question_set_name = create_question_set(
@@ -167,17 +170,21 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 			job_description=job_description,
 			difficulty_level=difficulty,
 			num_questions=num_questions,
+			applicant_name=job_applicant if personalized else None,
 		)
 
 		# Inform via comment on applicant
 		applicant.add_comment("Comment", f"Question set generated: {question_set_name}")
 
 		frappe.msgprint(
-			f"✅ Question set generated: {question_set_name}", indicator="green", alert=True
+			f"✅ Question set generated: {question_set_name}" + (" (personalized)" if personalized else ""),
+			indicator="green",
+			alert=True
 		)
 		return {"success": True, "question_set": question_set_name}
 
 	except Exception as e:
+		frappe.logger("ai_hiring").error(f"[GENERATE QUESTIONS] Applicant: {job_applicant}, Job Title: {applicant.job_title}, Job Description: {job_description if job_description else 'Not provided'}")
 		frappe.throw(f"Failed to generate questions: {str(e)}")
 
 
