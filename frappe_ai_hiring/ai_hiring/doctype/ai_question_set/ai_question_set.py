@@ -14,6 +14,7 @@ class AIQuestionSet(Document):
 		"""Validate question set"""
 		self.update_total_questions()
 		self.validate_passing_score()
+		self.calculate_and_update_score()
 
 	def update_total_questions(self):
 		"""Update total questions count"""
@@ -23,6 +24,32 @@ class AIQuestionSet(Document):
 		"""Validate passing score"""
 		if self.passing_score and not (0 <= self.passing_score <= 100):
 			frappe.throw("Passing score must be between 0 and 100")
+
+	def calculate_and_update_score(self):
+		"""Calculate and update total score and percentage based on candidate answers"""
+		if not self.questions:
+			self.total_score = 0
+			self.score_percentage = 0
+			return
+
+		# Check if any candidate answers are provided
+		has_answers = any(q.candidate_answer for q in self.questions)
+		if not has_answers:
+			# No answers yet, don't calculate
+			return
+
+		total_weight = sum(q.weight or 1 for q in self.questions)
+		earned_weight = 0
+
+		for question in self.questions:
+			if question.candidate_answer and question.expected_answer:
+				is_correct = question.candidate_answer == question.expected_answer
+				weight = question.weight or 1
+				if is_correct:
+					earned_weight += weight
+
+		self.total_score = earned_weight
+		self.score_percentage = (earned_weight / total_weight * 100) if total_weight > 0 else 0
 
 	def get_questions_by_topic(self, topic: str) -> List[Dict[str, Any]]:
 		"""

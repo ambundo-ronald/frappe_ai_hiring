@@ -10,12 +10,18 @@
   "job_role",
  "difficulty",
  "job_description",
+  "candidate_section",
+  "applicant",
   "personalization_section",
   "based_on_applicant",
   "include_resume_based_questions",
   "column_break_1",
   "total_questions",
   "passing_score",
+  "score_section",
+  "total_score",
+  "column_break_score",
+  "score_percentage",
   "questions_section",
   "questions",
   "metadata_section",
@@ -52,6 +58,20 @@
      "label": "Job Description",
      "description": "Cached job description used for generation"
     },
+  {
+   "fieldname": "candidate_section",
+   "fieldtype": "Section Break",
+   "label": "Candidate"
+  },
+  {
+   "fieldname": "applicant",
+   "fieldtype": "Link",
+   "label": "Job Applicant",
+   "options": "Job Applicant",
+   "description": "Link to the candidate taking this assessment",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
   {
    "fieldname": "personalization_section",
    "fieldtype": "Section Break",
@@ -90,6 +110,33 @@
    "label": "Passing Score (%)",
    "default": 70.0,
    "description": "Minimum score to pass"
+  },
+  {
+   "fieldname": "score_section",
+   "fieldtype": "Section Break",
+   "label": "Score",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "total_score",
+   "fieldtype": "Float",
+   "label": "Total Score",
+   "read_only": 1,
+   "precision": 2,
+   "description": "Total earned weight"
+  },
+  {
+   "fieldname": "column_break_score",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "score_percentage",
+   "fieldtype": "Percent",
+   "label": "Score Percentage",
+   "read_only": 1,
+   "precision": 2,
+   "in_list_view": 1,
+   "description": "Final score as percentage"
   },
   {
    "fieldname": "questions_section",

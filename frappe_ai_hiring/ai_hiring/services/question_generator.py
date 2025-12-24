@@ -396,6 +396,7 @@ def create_question_set(
 	question_set.total_questions = len(result["questions"])
 	question_set.prompt_version = PROMPT_VERSION
 	if applicant_name:
+		question_set.applicant = applicant_name
 		question_set.based_on_applicant = applicant_name
 		question_set.include_resume_based_questions = 1
 	

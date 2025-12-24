@@ -9,6 +9,7 @@
   "question_text",
   "column_break_1",
   "expected_answer",
+  "candidate_answer",
     "weight",
     "type",
     "category"
@@ -40,6 +41,14 @@
    "options": "Yes\nNo",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "candidate_answer",
+   "fieldtype": "Select",
+   "label": "Candidate Answer",
+   "options": "Yes\nNo",
+   "in_list_view": 1,
+   "description": "Answer provided by the candidate"
   },
   {
    "fieldname": "weight",
