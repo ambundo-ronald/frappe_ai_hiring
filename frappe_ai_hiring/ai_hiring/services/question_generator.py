@@ -150,11 +150,30 @@ Generate questions in these 4 categories:
 3. GAP ANALYSIS (~15%): Questions on important skills required but not in resume
 4. VERIFICATION (~10%): Questions about their specific projects or achievements
 
-Each question must include type, category, and rationale fields.
+Each question MUST include type, category, and rationale fields.
 """
 
 	system_prompt += """
-OUTPUT FORMAT: Return JSON with questions array and metadata.
+OUTPUT FORMAT - REQUIRED JSON STRUCTURE:
+{
+  "questions": [
+    {
+      "topic": "string",
+      "question_text": "string (must be answerable with Yes/No)",
+      "expected_answer": "Yes" or "No",
+      "weight": number(1-10),
+      "type": "generic|depth|gap|verification",
+      "category": "Job Description|Claimed Skills|Missing Skills|Project Experience",
+      "rationale": "string explaining why this question matters"
+    }
+  ],
+  "metadata": {
+    "difficulty_level": "string",
+    "total_questions": number,
+    "topics_covered": ["array of strings"]
+  }
+}
+
 Each question must have: topic, question_text, expected_answer (Yes/No), weight (1-10)"""
 	
 	if candidate_context:
@@ -247,11 +266,17 @@ def validate_questions_schema(data: Dict[str, Any], has_candidate_data: bool = F
 				if field not in question:
 					raise ValueError(f"Question {idx + 1} missing '{field}'")
 			
-			if question["type"] not in valid_types:
-				raise ValueError(f"Question {idx + 1} has invalid type")
+			# Validate and normalize type field - default to 'generic' if missing/invalid
+			q_type = question.get("type", "").lower().strip()
+			if not q_type or q_type not in valid_types:
+				question["type"] = "generic"
+				frappe.logger("ai_hiring").warn(f"Question {idx + 1}: type missing/invalid, defaulted to 'generic'")
 			
-			if question["category"] not in valid_categories:
-				raise ValueError(f"Question {idx + 1} has invalid category")
+			# Validate and normalize category field - default to 'Job Description' if missing/invalid
+			q_category = question.get("category", "").strip()
+			if not q_category or q_category not in valid_categories:
+				question["category"] = "Job Description"
+				frappe.logger("ai_hiring").warn(f"Question {idx + 1}: category missing/invalid, defaulted to 'Job Description'")
 			
 			if not str(question.get("rationale", "")).strip():
 				raise ValueError(f"Question {idx + 1} has empty rationale")
