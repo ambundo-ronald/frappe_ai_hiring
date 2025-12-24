@@ -930,3 +930,11 @@ frappe.db.sql("SHOW PROFILE FOR QUERY 1")
 **Last Updated**: 2024-12-15  
 **Next Review**: 2025-03-15  
 **Maintained By**: DevOps Team
+
+```
+frappe.call({
+    method: "frappe_ai_hiring.ai_hiring.services.resume_extractor.debug_resume_extraction",
+    args: { applicant_name: "JOB-APP-2024-00001" },
+    callback: (r) => console.log(r.message)
+});
+```

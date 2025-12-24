@@ -49,7 +49,7 @@ class ResumeExtractor:
 		return None
 
 	def _extract_from_pdf(self, file_path: str) -> str:
-		"""Extract text from PDF file"""
+		"""Extract text from PDF file with fallback to OCR for scanned PDFs."""
 		try:
 			import PyPDF2
 
@@ -58,17 +58,28 @@ class ResumeExtractor:
 				pdf_reader = PyPDF2.PdfReader(file)
 				for page in pdf_reader.pages:
 					page_text = page.extract_text()
-					if page_text:
+					if page_text and page_text.strip():
 						text.append(page_text)
 
-			return "\n\n".join(text)
+			extracted = "\n\n".join(text)
+			
+			# If no text extracted (likely scanned PDF), try OCR fallback
+			if not extracted or not extracted.strip():
+				frappe.logger("ai_hiring").warning(f"No text extracted from PDF {file_path}, attempting OCR fallback")
+				return self._extract_pdf_with_ocr(file_path)
+
+			return extracted
 
 		except ImportError:
 			frappe.throw(
 				"PyPDF2 library not installed. Install with: pip install PyPDF2"
 			)
 		except Exception as e:
-			raise Exception(f"PDF extraction failed: {str(e)}")
+			frappe.logger("ai_hiring").warning(f"PDF text extraction failed: {str(e)}, trying OCR fallback")
+			try:
+				return self._extract_pdf_with_ocr(file_path)
+			except:
+				raise Exception(f"PDF extraction and OCR both failed: {str(e)}")
 
 	def _extract_from_docx(self, file_path: str) -> str:
 		"""Extract text from DOCX file"""
@@ -109,6 +120,36 @@ class ResumeExtractor:
 				return file.read()
 		except Exception as e:
 			raise Exception(f"TXT extraction failed: {str(e)}")
+
+	def _extract_pdf_with_ocr(self, file_path: str) -> str:
+		"""Extract text from PDF using OCR (for scanned/image-only PDFs)."""
+		try:
+			import pytesseract
+			from pdf2image import convert_from_path
+
+			frappe.logger("ai_hiring").info(f"Using OCR to extract text from {file_path}")
+			images = convert_from_path(file_path)
+			
+			text = []
+			for idx, image in enumerate(images):
+				frappe.logger("ai_hiring").debug(f"OCR processing page {idx + 1}/{len(images)}")
+				ocr_text = pytesseract.image_to_string(image)
+				if ocr_text and ocr_text.strip():
+					text.append(ocr_text)
+			
+			if not text:
+				raise Exception("OCR failed to extract any text from PDF")
+			
+			frappe.logger("ai_hiring").info(f"OCR extraction successful: {len(text)} pages processed")
+			return "\n\n".join(text)
+		
+		except ImportError:
+			raise Exception(
+				"OCR libraries not installed. Install with: pip install pytesseract pdf2image. "
+				"Also install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki"
+			)
+		except Exception as e:
+			raise Exception(f"OCR extraction failed: {str(e)}")
 
 	def extract_from_attachment(self, file_url: str) -> Optional[str]:
 		"""
@@ -167,6 +208,76 @@ def test_extraction(file_url: str):
 	try:
 		extractor = ResumeExtractor()
 		text = extractor.extract_from_attachment(file_url)
-		return {"success": True, "text": text[:500], "length": len(text)}
+		if text:
+			return {"success": True, "text": text[:500], "length": len(text)}
+		else:
+			return {"success": False, "error": "No text extracted"}
 	except Exception as e:
 		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def debug_resume_extraction(applicant_name: str):
+	"""Debug resume extraction step-by-step for troubleshooting."""
+	try:
+		# Step 1: Validate applicant
+		if not frappe.db.exists("Job Applicant", applicant_name):
+			return {"success": False, "step": 1, "error": f"Job Applicant not found: {applicant_name}"}
+		
+		applicant = frappe.get_doc("Job Applicant", applicant_name)
+		
+		# Step 2: Check resume attached
+		if not applicant.resume_attachment:
+			return {"success": False, "step": 2, "error": "No resume attached to applicant"}
+		
+		file_url = applicant.resume_attachment
+		
+		# Step 3: Get File document
+		try:
+			file_doc = frappe.get_doc("File", {"file_url": file_url})
+		except:
+			return {"success": False, "step": 3, "error": f"File document not found for URL: {file_url}"}
+		
+		# Step 4: Get file path
+		try:
+			file_path = file_doc.get_full_path()
+		except Exception as e:
+			return {"success": False, "step": 4, "error": f"Failed to get file path: {str(e)}"}
+		
+		# Step 5: Check file exists on disk
+		import os
+		if not file_path or not os.path.exists(file_path):
+			return {
+				"success": False,
+				"step": 5,
+				"error": f"Physical file not found at path: {file_path}",
+				"file_path": file_path
+			}
+		
+		# Step 6: Attempt extraction
+		try:
+			extractor = ResumeExtractor()
+			text = extractor.extract_text(file_path)
+		except Exception as e:
+			return {
+				"success": False,
+				"step": 6,
+				"error": f"Extraction failed: {str(e)}",
+				"file_path": file_path,
+				"file_exists": True
+			}
+		
+		# Success
+		return {
+			"success": True,
+			"step": "complete",
+			"applicant": applicant_name,
+			"file_url": file_url,
+			"file_path": file_path,
+			"file_exists": os.path.exists(file_path),
+			"text_length": len(text) if text else 0,
+			"preview": text[:300] if text else "No text extracted"
+		}
+	
+	except Exception as e:
+		return {"success": False, "error": f"Unexpected error: {str(e)}", "traceback": frappe.get_traceback()}
