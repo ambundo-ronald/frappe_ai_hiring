@@ -7,6 +7,68 @@ Adds AI Hiring actions to Job Applicant doctype
 """
 
 import frappe
+import re
+import html
+from html.parser import HTMLParser
+
+
+class HTMLStripper(HTMLParser):
+	"""Simple HTML tag stripper for Quill and standard HTML content."""
+	def __init__(self):
+		super().__init__()
+		self.reset()
+		self.strict = False
+		self.convert_charrefs = True
+		self.text = []
+	
+	def handle_data(self, data):
+		if data.strip():  # Only append non-whitespace data
+			self.text.append(data.strip())
+	
+	def get_data(self):
+		return ' '.join(self.text)  # Join with spaces
+
+
+def strip_html_tags(html_text: str) -> str:
+	"""Remove HTML tags from text, returning plain text only.
+	
+	Handles:
+	- Standard HTML tags
+	- Quill Rich Text Editor markup
+	- HTML entities (&amp;, &quot;, etc.)
+	- Multiple nested styles and attributes
+	- Empty spans and div wrappers
+	"""
+	if not html_text:
+		return ""
+	
+	try:
+		# Step 1: Use HTMLParser to extract text content
+		stripper = HTMLStripper()
+		stripper.feed(html_text)
+		plain_text = stripper.get_data()
+		
+		# Step 2: Decode any remaining HTML entities
+		plain_text = html.unescape(plain_text)
+		
+		# Step 3: Clean up whitespace
+		plain_text = re.sub(r'\s+', ' ', plain_text).strip()
+		
+		return plain_text
+	except Exception as e:
+		# Fallback: use regex-based stripping if HTMLParser fails
+		frappe.logger("ai_hiring").warn(f"HTMLParser failed, using regex fallback: {str(e)}")
+		
+		# Remove all HTML tags
+		plain_text = re.sub(r'<[^>]+>', '', html_text)
+		
+		# Decode HTML entities
+		plain_text = html.unescape(plain_text)
+		
+		# Clean up whitespace
+		plain_text = re.sub(r'\s+', ' ', plain_text).strip()
+		
+		return plain_text
 
 
 @frappe.whitelist()
@@ -159,25 +221,28 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 			)
 			if job_opening_name:
 				job_opening = frappe.get_doc("Job Opening", job_opening_name)
-				job_description = job_opening.description or ""
-
-		# Enforce mandatory job description; derive it from Job Opening(s) using job_title
+				job_description = strip_html_tags(job_opening.description or "")
+				role_title = job_opening.job_title or ""
+		
+		# If no description found, try fetching recent openings by job title
 		if not job_description or not job_description.strip():
-			# Try fetching a few recent openings and pick the first with non-empty description
 			openings = frappe.get_all(
 				"Job Opening",
-				filters={"name": applicant.job_title},
+				filters={"job_title": applicant.job_title},
 				fields=["name", "description", "job_title"],
-				order_by="creation desc"
+				order_by="creation desc",
+				limit=5
 			)
 			for op in openings:
-				if op.get("job_title") and op.get("job_title").strip():
-					role_title = op.get("job_title").strip()
 				if op.get("description") and op.get("description").strip():
-					job_description = op.get("description").strip()
+					job_description = strip_html_tags(op.get("description")).strip()
+					if op.get("job_title"):
+						role_title = op.get("job_title").strip()
 					break
-			if not job_description or not job_description.strip():
-				frappe.throw("Job description is required (no Job Opening with description found for this job title)")
+		
+		# Enforce mandatory job description
+		if not job_description or not job_description.strip():
+			frappe.throw("Job description is required (no Job Opening with description found for this job title)")
 
 		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
 
