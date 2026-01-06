@@ -36,7 +36,7 @@ AI Hiring Automation is a comprehensive Frappe application that leverages artifi
 
 1. Get the app:
 ```bash
-bench get-app https://github.com/yourcompany/frappe_ai_hiring.git
+bench get-app https://github.com/connectionloops/frappe_ai_hiring
 ```
 
 2. Install on your site:
@@ -62,24 +62,6 @@ bench --site your-site.local install-app frappe_ai_hiring
    - Fit scores
    - Detailed reasoning
    - Missing skills analysis
-
-3. **Send Questionnaires**: For shortlisted candidates:
-   - System generates role-specific binary questions
-   - Candidates receive questionnaire links
-   - Auto-scoring with pass/fail thresholds
-
-4. **Interview Preparation**: Before interviews, view **AI Interview Brief** for:
-   - Candidate strengths and risks
-   - Verification points
-   - Suggested questions
-
-### For Developers
-
-See [DEVELOPER.md](DEVELOPER.md) for:
-- Architecture overview
-- API documentation
-- Custom prompt templates
-- Extension guidelines
 
 ## Configuration
 
@@ -109,17 +91,9 @@ Background jobs use Frappe's queue system:
 ## Pipeline States
 
 ```
-Applied → AI Parsed → AI Shortlisted → Questionnaire Sent →
-Questionnaire Passed → Interview Scheduled → Interview Completed →
+Applied → AI Parsed → AI Shortlisted → Interview Scheduled → Interview Completed →
 Offer / Rejected
 ```
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Link to repo]
-- Documentation: [Link to docs]
-- Email: support@yourcompany.com
 
 ## License
 
