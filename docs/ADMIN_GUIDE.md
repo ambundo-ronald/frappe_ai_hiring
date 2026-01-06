@@ -917,20 +917,6 @@ frappe.db.sql("SHOW PROFILE FOR QUERY 1")
 - `tabAI Audit Log`: Operation audit trail
 - `tabAI Settings`: Configuration
 
-### Support Contacts
-
-- **Technical Support**: support@yourcompany.com
-- **Emergency**: emergency@yourcompany.com
-- **Security Issues**: security@yourcompany.com
-- **GitHub**: https://github.com/your-org/ai_hiring
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: 2024-12-15  
-**Next Review**: 2025-03-15  
-**Maintained By**: DevOps Team
-
 ```
 frappe.call({
     method: "frappe_ai_hiring.ai_hiring.services.resume_extractor.debug_resume_extraction",
