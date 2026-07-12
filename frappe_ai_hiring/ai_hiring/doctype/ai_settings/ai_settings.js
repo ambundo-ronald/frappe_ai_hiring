@@ -3,6 +3,13 @@
 
 // Client-side script to wire the Test Configuration button
 frappe.ui.form.on("AI Settings", {
+	provider(frm) {
+		if (frm.doc.provider === "Gemini") {
+			frm.set_value("api_base_url", "https://generativelanguage.googleapis.com/v1beta");
+			frm.set_value("default_model", "gemini-2.0-flash");
+		}
+	},
+
 	refresh(frm) {
 		// Add explicit button to call server-side test_connection
 		frm.add_custom_button(

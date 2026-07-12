@@ -12,13 +12,37 @@ from typing import Dict, Any, Optional
 from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 from frappe_ai_hiring.ai_hiring.utils.common import get_job_description
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import get_job_opening_from_applicant
 
 
 # Prompt version for tracking
 SHORTLISTING_PROMPT_VERSION = "1.0.0"
 
 
-def get_shortlisting_prompt(resume_data: Dict[str, Any], job_description: str) -> tuple[str, str]:
+def get_shortlisting_threshold() -> float:
+	"""Return the HR-configured score threshold for automatic shortlisting."""
+	threshold = frappe.db.get_single_value("AI Settings", "shortlisting_threshold")
+	return float(threshold if threshold is not None else 70.0)
+
+
+def normalize_fit_score(fit_score: Any) -> float:
+	"""Normalize model fit scores to the 0-100 scale used by HR settings."""
+	score = float(fit_score)
+	if 0 <= score <= 1:
+		score = score * 100
+	return round(score, 2)
+
+
+def get_threshold_decision(fit_score: float, threshold: Optional[float] = None) -> str:
+	"""Apply the HR-configured score rule as the source of truth."""
+	if threshold is None:
+		threshold = get_shortlisting_threshold()
+	return "Shortlist" if normalize_fit_score(fit_score) >= float(threshold) else "Reject"
+
+
+def get_shortlisting_prompt(
+	resume_data: Dict[str, Any], job_description: str, shortlisting_threshold: float
+) -> tuple[str, str]:
 	"""
 	Get system and user prompts for candidate shortlisting
 
@@ -66,10 +90,12 @@ OUTPUT SCHEMA (respond with valid JSON only):
   "confidence_score": <0.0-1.0>
 }}
 
-DECISION CRITERIA:
-- Shortlist: fit_score >= 70, strong skill match, adequate experience
-- Reject: fit_score < 50, critical skills missing, insufficient experience
-- Review: fit_score 50-69, partial skill match, needs human review
+SCORING RULE:
+- Return fit_score on a 0-100 scale.
+- The HR-configured automatic shortlisting threshold is {shortlisting_threshold}%.
+- Shortlist means fit_score >= {shortlisting_threshold}.
+- Reject means fit_score < {shortlisting_threshold}.
+- Use Review only if the profile cannot be reliably scored from the available resume data.
 
 Evaluate the candidate now:"""
 
@@ -110,8 +136,9 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 			frappe.throw("Job description not found")
 
 		# Step 3: Call LLM for shortlisting
+		threshold = get_shortlisting_threshold()
 		client = LLMClient()
-		system_prompt, user_prompt = get_shortlisting_prompt(resume_data, job_description)
+		system_prompt, user_prompt = get_shortlisting_prompt(resume_data, job_description, threshold)
 
 		shortlisting_data = client.call_llm(
 			prompt=user_prompt,
@@ -126,6 +153,9 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 			if field not in shortlisting_data:
 				frappe.throw(f"Missing required field in shortlisting data: {field}")
 
+		fit_score = normalize_fit_score(shortlisting_data["fit_score"])
+		decision = get_threshold_decision(fit_score, threshold)
+
 		# Step 5: Create AI Shortlisting Result
 		settings = frappe.get_cached_doc("AI Settings", "AI Settings")
 		config = settings.get_api_config()
@@ -139,8 +169,8 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 		)
 
 		result.set_result(
-			decision=shortlisting_data["decision"],
-			fit_score=float(shortlisting_data["fit_score"]),
+			decision=decision,
+			fit_score=fit_score,
 			reasons=shortlisting_data["reasons"],
 			missing_skills=shortlisting_data["missing_skills"],
 			strengths=shortlisting_data.get("strengths", []),
@@ -157,8 +187,8 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 		AIAuditLogger.log_shortlisting_decision(
 			applicant=applicant_name,
 			job_opening=job_opening,
-			decision=shortlisting_data["decision"],
-			fit_score=float(shortlisting_data["fit_score"]),
+			decision=decision,
+			fit_score=fit_score,
 			reasons=shortlisting_data["reasons"],
 			model=config.get("model"),
 		)
@@ -183,7 +213,7 @@ def shortlist_candidate(applicant_name: str, job_opening: str) -> Optional[str]:
 def create_shortlisting_result(job_applicant: str, job_opening: Optional[str] = None) -> Optional[str]:
 	"""Public wrapper to run shortlisting and persist result."""
 	if not job_opening:
-		job_opening = frappe.db.get_value("Job Applicant", job_applicant, "job_title")
+		job_opening = get_job_opening_from_applicant(job_applicant)
 		if not job_opening:
 			frappe.throw(f"Job Opening not found for applicant {job_applicant}")
 
@@ -239,9 +269,14 @@ def bulk_shortlist(job_opening: str):
 		# Get all applicants for job opening
 		applicants = frappe.get_all(
 			"Job Applicant",
-			filters={"job_title": job_opening, "status": ["!=", "Rejected"]},
+			filters={"status": ["!=", "Rejected"]},
 			fields=["name", "applicant_name"],
 		)
+		applicants = [
+			applicant
+			for applicant in applicants
+			if get_job_opening_from_applicant(applicant.name) == job_opening
+		]
 
 		if not applicants:
 			return {"success": False, "message": "No applicants found"}

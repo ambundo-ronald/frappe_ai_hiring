@@ -6,6 +6,7 @@ Manages the state transitions and workflow logic for the AI hiring pipeline
 import frappe
 from typing import Dict, List, Any, Optional
 from enum import Enum
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import get_job_opening_from_applicant, get_job_title
 
 
 class PipelineStage(Enum):
@@ -146,7 +147,8 @@ class WorkflowState:
 				return PipelineStage.REJECTED
 		
 		# Check for questionnaire
-		if frappe.db.exists("AI Question Set", {"job_role": applicant.job_title}):
+		job_title = get_job_title(get_job_opening_from_applicant(applicant), applicant)
+		if job_title and frappe.db.exists("AI Question Set", {"job_role": job_title}):
 			return PipelineStage.QUESTIONNAIRE_PENDING
 		
 		# Check shortlisting

@@ -6,6 +6,10 @@ Helper functions for managing background jobs and queue operations
 import frappe
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	get_applicant_link_filter,
+	get_job_opening_from_applicant,
+)
 
 
 def enqueue_with_retry(
@@ -280,24 +284,28 @@ def get_applicant_processing_status(job_applicant: str) -> Dict[str, Any]:
 		"current_stage": None,
 		"overall_status": "Not Started"
 	}
+	profile_filter = get_applicant_link_filter("AI Candidate Profile", job_applicant)
+	shortlisting_filter = get_applicant_link_filter("AI Shortlisting Result", job_applicant)
+	evaluation_filter = get_applicant_link_filter("AI Evaluation Result", job_applicant)
+	brief_filter = get_applicant_link_filter("AI Interview Brief", job_applicant)
 	
 	# Check for candidate profile
-	if frappe.db.exists("AI Candidate Profile", {"job_applicant": job_applicant}):
+	if frappe.db.exists("AI Candidate Profile", profile_filter):
 		status["stages_completed"].append("Resume Parsing")
 	
 	# Check for shortlisting result
-	if frappe.db.exists("AI Shortlisting Result", {"job_applicant": job_applicant}):
+	if frappe.db.exists("AI Shortlisting Result", shortlisting_filter):
 		status["stages_completed"].append("Shortlisting")
-		result = frappe.get_doc("AI Shortlisting Result", {"job_applicant": job_applicant})
+		result = frappe.get_doc("AI Shortlisting Result", shortlisting_filter)
 		status["decision"] = result.decision
 		status["fit_score"] = result.fit_score
 	
 	# Check for questionnaire
-	if frappe.db.exists("AI Evaluation Result", {"job_applicant": job_applicant}):
+	if frappe.db.exists("AI Evaluation Result", evaluation_filter):
 		status["stages_completed"].append("Questionnaire Evaluation")
 	
 	# Check for interview brief
-	if frappe.db.exists("AI Interview Brief", {"job_applicant": job_applicant}):
+	if frappe.db.exists("AI Interview Brief", brief_filter):
 		status["stages_completed"].append("Interview Brief")
 	
 	# Determine overall status
@@ -329,6 +337,7 @@ def reprocess_applicant(job_applicant: str, stages: Optional[List[str]] = None) 
 		frappe.throw("Insufficient permissions")
 	
 	applicant = frappe.get_doc("Job Applicant", job_applicant)
+	job_opening = get_job_opening_from_applicant(applicant)
 	
 	if not stages:
 		stages = ["parsing", "shortlisting", "interview_brief"]
@@ -342,7 +351,7 @@ def reprocess_applicant(job_applicant: str, stages: Optional[List[str]] = None) 
 			
 			profile_name = create_candidate_profile(
 				job_applicant=job_applicant,
-				job_opening=applicant.job_title
+				job_opening=job_opening
 			)
 			results["reprocessed"].append({"stage": "parsing", "status": "success", "doc": profile_name})
 		except Exception as e:
@@ -355,7 +364,7 @@ def reprocess_applicant(job_applicant: str, stages: Optional[List[str]] = None) 
 			
 			result_name = reshortlist_candidate(
 				job_applicant=job_applicant,
-				job_opening=applicant.job_title
+				job_opening=job_opening
 			)
 			results["reprocessed"].append({"stage": "shortlisting", "status": "success", "doc": result_name})
 		except Exception as e:
@@ -364,10 +373,11 @@ def reprocess_applicant(job_applicant: str, stages: Optional[List[str]] = None) 
 	# Regenerate interview brief
 	if "interview_brief" in stages:
 		try:
-			if frappe.db.exists("AI Interview Brief", {"job_applicant": job_applicant}):
+			brief_filter = get_applicant_link_filter("AI Interview Brief", job_applicant)
+			if frappe.db.exists("AI Interview Brief", brief_filter):
 				from frappe_ai_hiring.ai_hiring.services.interview_brief_service import regenerate_interview_brief
 				
-				brief_name = frappe.db.get_value("AI Interview Brief", {"job_applicant": job_applicant}, "name")
+				brief_name = frappe.db.get_value("AI Interview Brief", brief_filter, "name")
 				regenerate_interview_brief(brief_name)
 				results["reprocessed"].append({"stage": "interview_brief", "status": "success", "doc": brief_name})
 			else:

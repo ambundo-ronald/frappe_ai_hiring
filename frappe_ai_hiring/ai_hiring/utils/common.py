@@ -8,6 +8,7 @@ Common Utility Functions
 import frappe
 import json
 from typing import Any, Dict, Optional
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import get_resume_file_url
 
 
 def get_job_description(job_opening: str) -> str:
@@ -28,8 +29,9 @@ def get_job_description(job_opening: str) -> str:
 	# Build comprehensive job description
 	description_parts = []
 
-	if job_doc.designation:
-		description_parts.append(f"Position: {job_doc.designation}")
+	designation = getattr(job_doc, "designation", None) or getattr(job_doc, "job_title", None)
+	if designation:
+		description_parts.append(f"Position: {designation}")
 
 	if job_doc.description:
 		description_parts.append(f"Description:\n{job_doc.description}")
@@ -61,12 +63,13 @@ def get_applicant_resume_text(applicant: str) -> Optional[str]:
 	applicant_doc = frappe.get_doc("Job Applicant", applicant)
 
 	# Check if resume is attached
-	if not applicant_doc.resume_attachment:
+	file_url = get_resume_file_url(applicant_doc)
+	if not file_url:
 		return None
 
 	# Get file content
 	try:
-		file_doc = frappe.get_doc("File", {"file_url": applicant_doc.resume_attachment})
+		file_doc = frappe.get_doc("File", {"file_url": file_url})
 
 		# For now, return file path - actual text extraction would use libraries
 		# like PyPDF2, python-docx, etc.

@@ -5,6 +5,12 @@ Handles email notifications and in-app alerts for the AI hiring pipeline
 
 import frappe
 from typing import Dict, List, Any, Optional
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	EMAIL_FIELD_CANDIDATES,
+	get_first_field,
+	get_job_opening_from_applicant,
+	get_job_title,
+)
 
 
 class NotificationManager:
@@ -30,8 +36,9 @@ class NotificationManager:
 		
 		try:
 			applicant = frappe.get_doc("Job Applicant", job_applicant)
+			email = get_first_field(applicant, EMAIL_FIELD_CANDIDATES)
 			
-			if not applicant.email_id:
+			if not email:
 				frappe.logger("ai_hiring").warning(
 					f"Cannot send notification to {job_applicant}: No email address"
 				)
@@ -47,7 +54,7 @@ class NotificationManager:
 			# Prepare context
 			context = {
 				"applicant_name": applicant.applicant_name,
-				"job_title": applicant.job_title,
+				"job_title": get_job_title(get_job_opening_from_applicant(applicant), applicant),
 				"company": frappe.defaults.get_global_default("company") or "Our Company"
 			}
 			
@@ -60,7 +67,7 @@ class NotificationManager:
 			
 			# Send email
 			frappe.sendmail(
-				recipients=[applicant.email_id],
+				recipients=[email],
 				subject=subject,
 				message=message,
 				reference_doctype="Job Applicant",
@@ -68,7 +75,7 @@ class NotificationManager:
 			)
 			
 			frappe.logger("ai_hiring").info(
-				f"Sent {notification_type} notification to {applicant.email_id}"
+				f"Sent {notification_type} notification to {email}"
 			)
 			
 			return True
@@ -120,7 +127,7 @@ class NotificationManager:
 			# Prepare context
 			context = {
 				"applicant_name": applicant.applicant_name,
-				"job_title": applicant.job_title,
+				"job_title": get_job_title(get_job_opening_from_applicant(applicant), applicant),
 				"applicant_link": frappe.utils.get_url_to_form("Job Applicant", job_applicant)
 			}
 			

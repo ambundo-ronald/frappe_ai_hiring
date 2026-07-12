@@ -4,9 +4,12 @@
 frappe.ui.form.on("Job Applicant", {
 	refresh(frm) {
 		// Add actions into the Form Menu instead of showing custom buttons
+		const resume_fields = ["resume_attachment", "resume", "resume_file", "attach_resume"];
+		const has_resume = resume_fields.some((fieldname) => frm.doc[fieldname]);
+		const has_job = frm.doc.job_title || frm.doc.job_opening;
 
-		// Process Candidate (requires resume attached)
-		if (frm.doc.resume_attachment) {
+		// Process Candidate
+		if (!frm.is_new() && (has_resume || frm.attachments)) {
 			frm.page.add_menu_item(__("Process Candidate"), () => {
 				frappe.call({
 					method: "frappe_ai_hiring.ai_hiring.doctype.job_applicant.job_applicant.process_candidate",
@@ -31,7 +34,7 @@ frappe.ui.form.on("Job Applicant", {
 		});
 
 		// Generate Questions (available when not Rejected and job title present)
-		if (frm.doc.status !== "Rejected" && frm.doc.job_title) {
+		if (frm.doc.status !== "Rejected" && has_job) {
 			frm.page.add_menu_item(__("Generate Questions"), () => {
 				frappe.call({
 					method: "frappe_ai_hiring.ai_hiring.doctype.job_applicant.job_applicant.generate_questions",

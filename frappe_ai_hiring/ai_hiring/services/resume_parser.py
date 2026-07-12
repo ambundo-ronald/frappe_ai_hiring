@@ -12,6 +12,12 @@ from typing import Dict, Any, Optional
 from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
 from frappe_ai_hiring.ai_hiring.utils.pii_redactor import PIIRedactor
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	EMAIL_FIELD_CANDIDATES,
+	PHONE_FIELD_CANDIDATES,
+	get_job_opening_from_applicant,
+	set_first_available_field,
+)
 
 
 # Prompt version for tracking
@@ -46,6 +52,9 @@ Resume Text:
 
 OUTPUT SCHEMA (respond with valid JSON only):
 {{
+  "full_name": "string",
+  "email": "string",
+  "phone": "string",
   "skills": ["skill1", "skill2", ...],
   "experience_years": <float>,
   "education": [
@@ -72,6 +81,7 @@ OUTPUT SCHEMA (respond with valid JSON only):
     }}
   ],
   "certifications": ["cert1", "cert2"],
+  "languages": ["language1", "language2"],
   "education_relevance": "Highly Relevant|Relevant|Somewhat Relevant|Not Relevant",
   "summary": "Brief 2-3 sentence professional summary",
   "confidence_score": <0.0-1.0>
@@ -80,6 +90,50 @@ OUTPUT SCHEMA (respond with valid JSON only):
 Parse the resume now:"""
 
 	return system_prompt, user_prompt
+
+
+def restore_pii_tokens(value: Any, token_map: Dict[str, str]) -> Any:
+	"""Restore redacted PII tokens in parsed LLM values."""
+	if not token_map:
+		return value
+
+	if isinstance(value, str):
+		for token, original in token_map.items():
+			value = value.replace(token, original)
+		return value
+
+	if isinstance(value, list):
+		return [restore_pii_tokens(item, token_map) for item in value]
+
+	if isinstance(value, dict):
+		return {key: restore_pii_tokens(item, token_map) for key, item in value.items()}
+
+	return value
+
+
+def sync_job_applicant_from_parsed_data(applicant_name: str, parsed_data: Dict[str, Any]):
+	"""Fill missing Job Applicant contact fields from parsed resume data."""
+	applicant = frappe.get_doc("Job Applicant", applicant_name)
+	updated = False
+
+	full_name = (parsed_data.get("full_name") or "").strip()
+	if full_name and (
+		not applicant.applicant_name
+		or str(applicant.applicant_name).startswith(("Resume Applicant", "New Applicant"))
+	):
+		applicant.applicant_name = full_name
+		updated = True
+
+	email = (parsed_data.get("email") or "").strip()
+	if email and set_first_available_field(applicant, EMAIL_FIELD_CANDIDATES, email):
+		updated = True
+
+	phone = (parsed_data.get("phone") or "").strip()
+	if phone and set_first_available_field(applicant, PHONE_FIELD_CANDIDATES, phone):
+		updated = True
+
+	if updated:
+		applicant.save(ignore_permissions=True)
 
 
 def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
@@ -130,6 +184,9 @@ def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
 			if field not in parsed_data:
 				frappe.throw(f"Missing required field in parsed data: {field}")
 
+		parsed_data = restore_pii_tokens(parsed_data, token_map)
+		sync_job_applicant_from_parsed_data(applicant_name, parsed_data)
+
 		# Step 5: Create AI Candidate Profile
 		profile = frappe.get_doc(
 			{
@@ -175,7 +232,7 @@ def parse_resume(applicant_name: str, job_opening: str) -> Optional[str]:
 def create_candidate_profile(job_applicant: str, job_opening: Optional[str] = None) -> Optional[str]:
 	"""Public wrapper to parse resume and create AI Candidate Profile."""
 	if not job_opening:
-		job_opening = frappe.db.get_value("Job Applicant", job_applicant, "job_title")
+		job_opening = get_job_opening_from_applicant(job_applicant)
 		if not job_opening:
 			frappe.throw(f"Job Opening not found for applicant {job_applicant}")
 

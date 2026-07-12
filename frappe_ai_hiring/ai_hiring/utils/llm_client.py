@@ -10,6 +10,7 @@ import frappe
 import json
 import requests
 from typing import Dict, Any, Optional
+from urllib.parse import quote
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 
 
@@ -114,13 +115,20 @@ class LLMClient:
 		"""Build request headers"""
 		headers = {"Content-Type": "application/json"}
 
-		if config.get("api_key"):
+		if config.get("api_key") and not self._is_gemini(config):
 			headers["Authorization"] = f"Bearer {config['api_key']}"
 
 		return headers
 
+	def _is_gemini(self, config: Dict[str, Any]) -> bool:
+		"""Return true when the configured provider is Google's Gemini API."""
+		return (config.get("provider") or "").lower() == "gemini"
+
 	def _get_endpoint_url(self, config: Dict[str, Any]) -> str:
 		"""Get API endpoint URL"""
+		if self._is_gemini(config):
+			return self._get_gemini_endpoint_url(config)
+
 		base_url = config.get("api_base_url", "https://api.openai.com/v1")
 
 		# Remove trailing slash
@@ -132,6 +140,22 @@ class LLMClient:
 
 		return base_url
 
+	def _get_gemini_endpoint_url(self, config: Dict[str, Any]) -> str:
+		"""Get Gemini generateContent endpoint URL."""
+		base_url = config.get("api_base_url") or "https://generativelanguage.googleapis.com/v1beta"
+		base_url = base_url.rstrip("/")
+
+		if ":generateContent" in base_url:
+			url = base_url
+		else:
+			model = config.get("model") or "gemini-2.0-flash"
+			if not str(model).startswith("models/"):
+				model = f"models/{model}"
+			url = f"{base_url}/{model}:generateContent"
+
+		separator = "&" if "?" in url else "?"
+		return f"{url}{separator}key={quote(config.get('api_key') or '')}"
+
 	def _build_payload(
 		self,
 		prompt: str,
@@ -141,6 +165,15 @@ class LLMClient:
 		max_tokens: Optional[int] = None,
 	) -> Dict[str, Any]:
 		"""Build API request payload"""
+		if self._is_gemini(config):
+			return self._build_gemini_payload(
+				prompt=prompt,
+				system_prompt=system_prompt,
+				config=config,
+				temperature=temperature,
+				max_tokens=max_tokens,
+			)
+
 		messages = []
 
 		if system_prompt:
@@ -157,9 +190,38 @@ class LLMClient:
 
 		return payload
 
+	def _build_gemini_payload(
+		self,
+		prompt: str,
+		system_prompt: Optional[str],
+		config: Dict[str, Any],
+		temperature: Optional[float] = None,
+		max_tokens: Optional[int] = None,
+	) -> Dict[str, Any]:
+		"""Build Gemini generateContent request payload."""
+		payload = {
+			"contents": [
+				{
+					"role": "user",
+					"parts": [{"text": prompt}],
+				}
+			],
+			"generationConfig": {
+				"temperature": temperature or config.get("temperature", 0.2),
+				"maxOutputTokens": max_tokens or config.get("max_tokens", 2000),
+				"responseMimeType": "application/json",
+			},
+		}
+
+		if system_prompt:
+			payload["systemInstruction"] = {"parts": [{"text": system_prompt}]}
+
+		return payload
+
 	def _extract_content(self, response: Dict[str, Any], config: Dict[str, Any]) -> str:
 		"""Extract content from API response"""
-		provider = config.get("provider", "OpenAI")
+		if self._is_gemini(config):
+			return self._extract_gemini_content(response)
 
 		# Standard OpenAI format
 		if "choices" in response and len(response["choices"]) > 0:
@@ -170,6 +232,21 @@ class LLMClient:
 			return response["content"]
 
 		frappe.throw("Unable to extract content from API response")
+
+	def _extract_gemini_content(self, response: Dict[str, Any]) -> str:
+		"""Extract text content from Gemini generateContent response."""
+		candidates = response.get("candidates") or []
+		if candidates:
+			parts = candidates[0].get("content", {}).get("parts") or []
+			text_parts = [part.get("text", "") for part in parts if part.get("text")]
+			if text_parts:
+				return "\n".join(text_parts)
+
+		prompt_feedback = response.get("promptFeedback") or {}
+		if prompt_feedback.get("blockReason"):
+			frappe.throw(f"Gemini blocked the prompt: {prompt_feedback.get('blockReason')}")
+
+		frappe.throw("Unable to extract content from Gemini response")
 
 	def _parse_json_response(self, content: str) -> Dict[str, Any]:
 		"""

@@ -5,6 +5,7 @@ Provides data for dashboard widgets and analytics
 
 import frappe
 from typing import Dict, List, Any, Optional
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import get_job_opening_from_applicant, get_job_title
 from datetime import datetime, timedelta
 
 
@@ -359,10 +360,11 @@ def get_applicant_timeline(job_applicant: str) -> List[Dict[str, Any]]:
 	
 	# Get Job Applicant creation
 	applicant = frappe.get_doc("Job Applicant", job_applicant)
+	job_title = get_job_title(get_job_opening_from_applicant(applicant), applicant)
 	timeline.append({
 		"date": applicant.creation,
 		"event": "Application Received",
-		"description": f"Applied for {applicant.job_title}",
+		"description": f"Applied for {job_title}",
 		"type": "info"
 	})
 	

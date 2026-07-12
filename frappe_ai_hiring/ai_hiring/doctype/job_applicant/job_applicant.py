@@ -10,6 +10,12 @@ import frappe
 import re
 import html
 from html.parser import HTMLParser
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	EMAIL_FIELD_CANDIDATES,
+	get_first_field,
+	get_job_opening_from_applicant,
+	get_job_title,
+)
 
 
 class HTMLStripper(HTMLParser):
@@ -119,6 +125,8 @@ def send_questionnaire(job_applicant: str):
 
 	try:
 		applicant = frappe.get_doc("Job Applicant", job_applicant)
+		job_opening = get_job_opening_from_applicant(applicant)
+		job_title = get_job_title(job_opening, applicant)
 
 		# Check if candidate is shortlisted
 		shortlisting = frappe.db.get_value(
@@ -136,14 +144,14 @@ def send_questionnaire(job_applicant: str):
 		# Get or create question set
 		question_set = frappe.db.get_value(
 			"AI Question Set",
-			{"job_role": applicant.job_title},
+			{"job_role": job_title},
 			"name",
 			order_by="creation desc",
 		)
 
 		if not question_set:
 			frappe.throw(
-				f"No question set found for {applicant.job_title}. Please generate one first."
+				f"No question set found for {job_title}. Please generate one first."
 			)
 
 		# Send notification
@@ -208,27 +216,29 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 
 	try:
 		applicant = frappe.get_doc("Job Applicant", job_applicant)
+		job_opening = get_job_opening_from_applicant(applicant)
+		applicant_job_title = get_job_title(job_opening, applicant)
 
-		if not applicant.job_title:
+		if not applicant_job_title:
 			frappe.throw("Job title is required to generate questions")
 
 		# Fetch job opening description if available
 		job_description = ""
 		role_title = ""
-		if applicant.job_title:
-			job_opening_name = frappe.db.get_value(
-				"Job Opening", {"name": applicant.job_title}, "name", order_by="creation desc"
+		if job_opening:
+			job_opening_doc = frappe.get_doc("Job Opening", job_opening)
+			job_description = strip_html_tags(job_opening_doc.description or "")
+			role_title = (
+				getattr(job_opening_doc, "job_title", None)
+				or getattr(job_opening_doc, "designation", None)
+				or ""
 			)
-			if job_opening_name:
-				job_opening = frappe.get_doc("Job Opening", job_opening_name)
-				job_description = strip_html_tags(job_opening.description or "")
-				role_title = job_opening.job_title or ""
 		
 		# If no description found, try fetching recent openings by job title
 		if not job_description or not job_description.strip():
 			openings = frappe.get_all(
 				"Job Opening",
-				filters={"job_title": applicant.job_title},
+				filters={"job_title": applicant_job_title},
 				fields=["name", "description", "job_title"],
 				order_by="creation desc",
 				limit=5
@@ -247,7 +257,7 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 		from frappe_ai_hiring.ai_hiring.services.question_generator import create_question_set
 
 		question_set_name = create_question_set(
-			job_role=role_title or applicant.job_title,
+			job_role=role_title or applicant_job_title,
 			job_description=job_description,
 			difficulty_level=difficulty,
 			num_questions=num_questions,
@@ -266,7 +276,11 @@ def generate_questions(job_applicant: str, difficulty: str = "Medium", num_quest
 
 	except Exception as e:
 		_safe_applicant = locals().get("applicant")
-		_safe_job_title = getattr(_safe_applicant, "job_title", "<unknown>") if _safe_applicant else "<unknown>"
+		_safe_job_title = locals().get("applicant_job_title") or (
+			get_job_title(get_job_opening_from_applicant(_safe_applicant), _safe_applicant)
+			if _safe_applicant
+			else "<unknown>"
+		)
 		_safe_jd = locals().get("job_description", "Not provided")
 		frappe.logger("ai_hiring").error(
 			f"[GENERATE QUESTIONS] Applicant: {job_applicant}, Job Title: {_safe_job_title}, Job Description: {_safe_jd}"
@@ -298,8 +312,9 @@ def send_rejection_email(job_applicant: str):
 		)
 
 		if success:
+			email = get_first_field(applicant, EMAIL_FIELD_CANDIDATES) or "candidate"
 			frappe.msgprint(
-				f"✅ Rejection email sent to {applicant.email_id}", indicator="green", alert=True
+				f"✅ Rejection email sent to {email}", indicator="green", alert=True
 			)
 			return {"success": True}
 		else:

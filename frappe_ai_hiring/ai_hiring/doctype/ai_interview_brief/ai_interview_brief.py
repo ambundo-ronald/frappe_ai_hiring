@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from typing import Dict, Any
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import EMAIL_FIELD_CANDIDATES, get_first_field
 
 
 class AIInterviewBrief(Document):
@@ -201,6 +202,7 @@ def schedule_interview(interview_brief: str, interview_date: str, interviewer_em
 
 		# Get applicant details
 		applicant = frappe.get_doc("Job Applicant", brief.applicant)
+		email = get_first_field(applicant, EMAIL_FIELD_CANDIDATES) or ""
 
 		# Create event
 		event = frappe.new_doc("Event")
@@ -211,7 +213,7 @@ def schedule_interview(interview_brief: str, interview_date: str, interviewer_em
 		event.description = f"""
         Candidate: {applicant.applicant_name}
         Job: {brief.job_opening}
-        Contact: {applicant.email_id}
+        Contact: {email}
         
         AI Interview Brief Summary:
         {brief.summary}

@@ -9,6 +9,7 @@ Extracts text from various resume formats (PDF, DOCX, TXT)
 import frappe
 import os
 from typing import Optional
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import get_resume_file_url
 
 
 class ResumeExtractor:
@@ -195,11 +196,12 @@ def extract_resume_text(applicant_name: str) -> Optional[str]:
 	"""
 	applicant = frappe.get_doc("Job Applicant", applicant_name)
 
-	if not applicant.resume_attachment:
+	file_url = get_resume_file_url(applicant)
+	if not file_url:
 		return None
 
 	extractor = ResumeExtractor()
-	return extractor.extract_from_attachment(applicant.resume_attachment)
+	return extractor.extract_from_attachment(file_url)
 
 
 @frappe.whitelist()
@@ -227,10 +229,9 @@ def debug_resume_extraction(applicant_name: str):
 		applicant = frappe.get_doc("Job Applicant", applicant_name)
 		
 		# Step 2: Check resume attached
-		if not applicant.resume_attachment:
+		file_url = get_resume_file_url(applicant)
+		if not file_url:
 			return {"success": False, "step": 2, "error": "No resume attached to applicant"}
-		
-		file_url = applicant.resume_attachment
 		
 		# Step 3: Get File document
 		try:

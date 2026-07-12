@@ -59,7 +59,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "OpenAI\nAzure OpenAI\nOllama\nCustom",
+   "options": "OpenAI\nAzure OpenAI\nGemini\nOllama\nCustom",
    "reqd": 1,
    "default": "OpenAI"
   },

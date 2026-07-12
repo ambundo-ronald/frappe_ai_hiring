@@ -8,6 +8,10 @@ Triggered when a new Job Applicant is created or updated
 
 import frappe
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	get_job_opening_from_applicant,
+	get_resume_file_url,
+)
 import time
 
 
@@ -30,6 +34,9 @@ def enqueue_applicant_processing(doc=None, method=None):
 			if not applicant_name:
 				frappe.throw("Job Applicant name is required")
 			doc = frappe.get_doc("Job Applicant", applicant_name)
+
+		if getattr(getattr(doc, "flags", None), "skip_ai_hiring_auto_enqueue", False):
+			return
 		
 		frappe.logger("ai_hiring").error(f"[ENQUEUE] Processing triggered for applicant: {doc.name}")
 		
@@ -42,9 +49,14 @@ def enqueue_applicant_processing(doc=None, method=None):
 			frappe.logger("ai_hiring").error(f"[ENQUEUE] Skipping AI processing for {doc.name} - AI processing disabled in settings")
 			return
 
-		# Check if resume is attached
-		if not doc.resume_attachment:
+		resume_file_url = get_resume_file_url(doc)
+		if not resume_file_url:
 			frappe.logger("ai_hiring").error(f"[ENQUEUE] Skipping AI processing for {doc.name} - no resume attached")
+			return
+
+		job_opening = get_job_opening_from_applicant(doc)
+		if not job_opening:
+			frappe.logger("ai_hiring").error(f"[ENQUEUE] Skipping AI processing for {doc.name} - no job opening found")
 			return
 
 		# Check if already processing or completed
@@ -72,7 +84,7 @@ def enqueue_applicant_processing(doc=None, method=None):
 			timeout=300,
 			job_name=job_id,
 			applicant_name=doc.name,
-			job_opening=doc.job_title,
+			job_opening=job_opening,
 			enqueue_after_commit=True,  # Wait for DB commit before queuing
 			is_async=True,
 		)
@@ -121,25 +133,42 @@ def process_applicant(applicant_name: str, job_opening: str):
 			raise Exception("Shortlisting failed")
 
 		shortlisting_result = frappe.get_doc("AI Shortlisting Result", shortlisting_result_name)
-		decision = shortlisting_result.decision
 		fit_score = shortlisting_result.fit_score
+		threshold_met = bool(shortlisting_result.threshold_met)
 
-		# Step 3: Update applicant status based on decision
-		if decision == "Shortlist":
+		# Step 3: Update applicant status based on the HR-configured threshold
+		if threshold_met:
 			status = "AI Shortlisted"
 			notes = f"AI Shortlisted with fit score: {fit_score}%"
-		elif decision == "Reject":
+		else:
 			status = "Rejected"
 			notes = f"AI Rejected with fit score: {fit_score}%"
-		else:  # Review
-			status = "Open"
-			notes = f"Flagged for manual review. Fit score: {fit_score}%"
 
 		from frappe_ai_hiring.ai_hiring.utils.common import update_applicant_status
 
 		update_applicant_status(applicant_name, status, notes)
 
-		# Stop the automated pipeline here (no auto question generation or emails)
+		if not threshold_met:
+			from frappe_ai_hiring.ai_hiring.utils.notifications import NotificationManager
+
+			email_sent = NotificationManager.send_candidate_notification(
+				job_applicant=applicant_name,
+				notification_type="rejection_notice",
+			)
+			applicant = frappe.get_doc("Job Applicant", applicant_name)
+			comment = "Automatic rejection email sent." if email_sent else "Automatic rejection email could not be sent."
+			applicant.add_comment("Comment", comment)
+			applicant.save(ignore_permissions=True)
+		else:
+			from frappe_ai_hiring.ai_hiring.utils.notifications import NotificationManager
+
+			NotificationManager.send_hr_notification(
+				job_applicant=applicant_name,
+				notification_type="candidate_shortlisted",
+				additional_data={"fit_score": fit_score},
+			)
+
+		# Stop the automated pipeline here (no auto question generation)
 		frappe.logger("ai_hiring").error(
 			f"[PROCESS] ===== JOB COMPLETED ===== Applicant: {applicant_name}, Status: {status}, Score: {fit_score}%"
 		)

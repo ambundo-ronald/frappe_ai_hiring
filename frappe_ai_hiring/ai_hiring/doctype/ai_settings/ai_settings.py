@@ -16,7 +16,7 @@ class AISettings(Document):
 
 	def validate_provider_config(self):
 		"""Validate provider-specific configuration"""
-		if self.provider in ["OpenAI", "Azure OpenAI", "Custom"]:
+		if self.provider in ["OpenAI", "Azure OpenAI", "Gemini", "Custom"]:
 			if not self.api_key:
 				frappe.throw("API Key is required for {0}".format(self.provider))
 			if not self.api_base_url and self.provider in ["Azure OpenAI", "Custom"]:

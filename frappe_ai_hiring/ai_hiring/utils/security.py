@@ -8,6 +8,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import hashlib
 import time
+from frappe_ai_hiring.ai_hiring.utils.hrms_compat import (
+	EMAIL_FIELD_CANDIDATES,
+	PHONE_FIELD_CANDIDATES,
+)
 
 
 class RateLimiter:
@@ -220,8 +224,9 @@ class DataRetentionPolicy:
 			# Anonymize Job Applicant
 			applicant = frappe.get_doc("Job Applicant", job_applicant)
 			applicant.applicant_name = f"Anonymized-{hashlib.md5(job_applicant.encode()).hexdigest()[:8]}"
-			applicant.email_id = None
-			applicant.phone_number = None
+			for fieldname in EMAIL_FIELD_CANDIDATES + PHONE_FIELD_CANDIDATES:
+				if applicant.meta.has_field(fieldname):
+					setattr(applicant, fieldname, None)
 			applicant.save(ignore_permissions=True)
 			
 			# Anonymize AI Candidate Profile

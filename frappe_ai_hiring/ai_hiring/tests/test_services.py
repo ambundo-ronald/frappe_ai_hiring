@@ -149,6 +149,66 @@ class TestShortlisting(FrappeTestCase):
 			assert result is not None
 			assert isinstance(result, str)
 
+	def test_threshold_decision_uses_hr_configured_score(self):
+		"""Test that shortlisting decisions use the configured HR threshold."""
+		from frappe_ai_hiring.ai_hiring.services.shortlisting_service import (
+			get_threshold_decision,
+		)
+
+		assert get_threshold_decision(79.99, threshold=80) == "Reject"
+		assert get_threshold_decision(80, threshold=80) == "Shortlist"
+
+	def test_normalize_fit_score_accepts_fractional_scores(self):
+		"""Test model scores returned as 0-1 are normalized to percentages."""
+		from frappe_ai_hiring.ai_hiring.services.shortlisting_service import (
+			normalize_fit_score,
+		)
+
+		assert normalize_fit_score(0.84) == 84
+		assert normalize_fit_score(84) == 84
+
+
+class TestLLMClientProviders(FrappeTestCase):
+	"""Tests for provider-specific LLM client behavior"""
+
+	def test_gemini_endpoint_uses_generate_content(self):
+		"""Test Gemini API endpoint is built with model and API key."""
+		from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
+
+		client = LLMClient.__new__(LLMClient)
+		url = client._get_endpoint_url(
+			{
+				"provider": "Gemini",
+				"api_base_url": "https://generativelanguage.googleapis.com/v1beta",
+				"model": "gemini-2.0-flash",
+				"api_key": "test key",
+			}
+		)
+
+		assert "models/gemini-2.0-flash:generateContent" in url
+		assert "key=test%20key" in url
+
+	def test_gemini_payload_and_response_extraction(self):
+		"""Test Gemini payload and response parsing match native API shape."""
+		from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
+
+		client = LLMClient.__new__(LLMClient)
+		payload = client._build_payload(
+			prompt="Return JSON",
+			system_prompt="System instruction",
+			config={"provider": "Gemini", "temperature": 0.2, "max_tokens": 100},
+		)
+
+		assert payload["contents"][0]["parts"][0]["text"] == "Return JSON"
+		assert payload["systemInstruction"]["parts"][0]["text"] == "System instruction"
+		assert payload["generationConfig"]["responseMimeType"] == "application/json"
+
+		content = client._extract_content(
+			{"candidates": [{"content": {"parts": [{"text": "{\"status\":\"ok\"}"}]}}]},
+			{"provider": "Gemini"},
+		)
+		assert content == "{\"status\":\"ok\"}"
+
 
 class TestQuestionGeneration(FrappeTestCase):
 	"""Tests for question generation service"""
