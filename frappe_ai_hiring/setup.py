@@ -15,7 +15,7 @@ setup(
     include_package_data=True,
     python_requires='>=3.10',
     install_requires=[
-        'frappe>=14.0.0',
+        'frappe>=16.0.0,<17.0.0',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -24,5 +24,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
 )
