@@ -14,9 +14,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires='>=3.10',
-    install_requires=[
-        'frappe>=16.0.0,<17.0.0',
-    ],
+    install_requires=[],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Frappe',
