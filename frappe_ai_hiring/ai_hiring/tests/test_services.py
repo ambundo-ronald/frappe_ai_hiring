@@ -172,7 +172,7 @@ class TestLLMClientProviders(FrappeTestCase):
 	"""Tests for provider-specific LLM client behavior"""
 
 	def test_gemini_endpoint_uses_generate_content(self):
-		"""Test Gemini API endpoint is built with model and API key."""
+		"""Test Gemini API endpoint is built without leaking the API key."""
 		from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
 
 		client = LLMClient.__new__(LLMClient)
@@ -186,7 +186,18 @@ class TestLLMClientProviders(FrappeTestCase):
 		)
 
 		assert "models/gemini-2.0-flash:generateContent" in url
-		assert "key=test%20key" in url
+		assert "test key" not in url
+		assert "key=" not in url
+
+	def test_gemini_auth_uses_header(self):
+		"""Test Gemini API key is sent through a header instead of the URL."""
+		from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
+
+		client = LLMClient.__new__(LLMClient)
+		headers = client._get_headers({"provider": "Gemini", "api_key": "test key"})
+
+		assert headers["x-goog-api-key"] == "test key"
+		assert "Authorization" not in headers
 
 	def test_gemini_payload_and_response_extraction(self):
 		"""Test Gemini payload and response parsing match native API shape."""
@@ -208,6 +219,20 @@ class TestLLMClientProviders(FrappeTestCase):
 			{"provider": "Gemini"},
 		)
 		assert content == "{\"status\":\"ok\"}"
+
+	def test_request_errors_redact_api_keys(self):
+		"""Test request error messages do not leak provider keys."""
+		import requests
+		from frappe_ai_hiring.ai_hiring.utils.llm_client import LLMClient
+
+		client = LLMClient.__new__(LLMClient)
+		error = requests.exceptions.RequestException(
+			"403 Client Error for url: https://example.com?key=secret-key"
+		)
+		message = client._format_request_error(error, {"provider": "Gemini", "api_key": "secret-key"})
+
+		assert "secret-key" not in message
+		assert "[redacted]" in message
 
 
 class TestQuestionGeneration(FrappeTestCase):

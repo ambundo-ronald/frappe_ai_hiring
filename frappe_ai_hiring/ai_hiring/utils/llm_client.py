@@ -10,7 +10,6 @@ import frappe
 import json
 import requests
 from typing import Dict, Any, Optional
-from urllib.parse import quote
 from frappe_ai_hiring.ai_hiring.utils.audit_logger import AIAuditLogger
 
 
@@ -97,7 +96,7 @@ class LLMClient:
 			return parsed_response
 
 		except requests.exceptions.RequestException as e:
-			error_msg = f"API request failed: {str(e)}"
+			error_msg = self._format_request_error(e, config)
 			AIAuditLogger.log_error(operation, error_msg, metadata)
 			frappe.throw(error_msg)
 
@@ -117,6 +116,9 @@ class LLMClient:
 
 		if config.get("api_key") and not self._is_gemini(config):
 			headers["Authorization"] = f"Bearer {config['api_key']}"
+
+		if config.get("api_key") and self._is_gemini(config):
+			headers["x-goog-api-key"] = config["api_key"]
 
 		return headers
 
@@ -153,8 +155,25 @@ class LLMClient:
 				model = f"models/{model}"
 			url = f"{base_url}/{model}:generateContent"
 
-		separator = "&" if "?" in url else "?"
-		return f"{url}{separator}key={quote(config.get('api_key') or '')}"
+		return url
+
+	def _format_request_error(self, error: requests.exceptions.RequestException, config: Dict[str, Any]) -> str:
+		"""Return a safe API error message without leaking credentials."""
+		status_code = getattr(getattr(error, "response", None), "status_code", None)
+		provider = config.get("provider", "AI provider")
+
+		if status_code == 429:
+			return (
+				f"API request failed: {provider} rate limit or quota exceeded. "
+				"Wait a few minutes, reduce bulk processing volume, or check your provider quota/billing."
+			)
+
+		message = str(error)
+		api_key = config.get("api_key")
+		if api_key:
+			message = message.replace(api_key, "[redacted]")
+
+		return f"API request failed: {message}"
 
 	def _build_payload(
 		self,
