@@ -8,6 +8,11 @@ frappe.ui.form.on("AI Settings", {
 			frm.set_value("api_base_url", "https://generativelanguage.googleapis.com/v1beta");
 			frm.set_value("default_model", "gemini-2.0-flash");
 		}
+
+		if (frm.doc.provider === "Ollama") {
+			frm.set_value("api_base_url", "http://localhost:11434/v1");
+			frm.set_value("default_model", "llama3.1:8b");
+		}
 	},
 
 	refresh(frm) {
